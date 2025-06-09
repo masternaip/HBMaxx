@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HBMaxx - Home</title>
+    <link rel="stylesheet" href="home.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="header-left">
+            <h1 class="logo"><a href="index.html" id="logo-link">HBMaxx</a></h1>
+            <nav>
+                <a href="index.html" id="home-link" class="active-nav">Home</a>
+                <a href="index.html#my-list-section" id="my-list-link">My List</a>
+            </nav>
+        </div>
+        <div class="header-right">
+            <div class="search-box">
+                <button onclick="openSearchModal()"><i class="fas fa-search"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <main id="main-content">
+        <section id="banner">
+            <div class="banner-content">
+                <h1 id="banner-title">Loading...</h1>
+                <div class="banner-buttons">
+                    <button id="banner-play-button"><i class="fas fa-play"></i> Play</button>
+                </div>
+            </div>
+            <button class="banner-arrow left" onclick="prevBanner()"><i class="fas fa-chevron-left"></i></button>
+            <button class="banner-arrow right" onclick="nextBanner()"><i class="fas fa-chevron-right"></i></button>
+        </section>
+
+        <section id="trending-movies-section">
+            <h2>Trending Movies</h2>
+            <div class="list-container" id="movies-list">
+                </div>
+        </section>
+
+        <section id="trending-tvshows-section">
+            <h2>Trending TV Shows</h2>
+            <div class="list-container" id="tvshows-list">
+                </div>
+        </section>
+
+        <section id="trending-anime-section">
+            <h2>Trending Anime</h2>
+            <div class="list-container" id="anime-list">
+                </div>
+        </section>
+
+        <section id="netflix-originals-section">
+            <h2>Netflix Originals</h2>
+            <div class="list-container" id="netflix-movies-list">
+                </div>
+        </section>
+
+        <section id="tagalog-movies-section">
+            <h2>Tagalog Movies</h2>
+            <div class="list-container" id="tagalog-movies-list">
+                </div>
+        </section>
+
+        <section id="my-list-section" style="display:none;">
+            <h2>My List</h2>
+            <div class="list-container" id="my-list-container">
+                <p style="text-align: center; color: #aaa;">Your list is empty. Add some movies or TV shows!</p>
+            </div>
+        </section>
+    </main>
+
+    <div id="footer">
+        <p>Disclaimer: This site is for educational and demonstration purposes only. No copyright infringement intended. All content is sourced from public APIs like TMDB and other open-source resources. We do not host any copyrighted material.</p>
+        <p>© 2025 HBMaxx. All rights reserved.</p>
+    </div>
+
+    <div id="search-modal" class="modal">
+        <div class="search-modal-content">
+            <span class="close-button" onclick="closeSearchModal()">&times;</span>
+            <input type="text" id="search-modal-input" placeholder="Search for movies or TV shows..." onkeyup="searchTMDB()">
+            <div id="search-results">
+                </div>
+        </div>
+    </div>
+
+    <script src="home.js"></script>
+</body>
+</html>

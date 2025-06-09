@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="page-title">Loading...</title>
+    <link rel="stylesheet" href="home.css"> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Specific styles for newpage.html to adapt for content */
+        body {
+            background-color: var(--primary-color);
+            color: var(--text-color);
+            padding-top: 80px; /* Space for the fixed header */
+        }
+
+        .details-container {
+            max-width: 1200px;
+            margin: var(--spacing-xl) auto;
+            padding: var(--spacing-l);
+            background-color: var(--secondary-color);
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-l);
+            position: relative;
+        }
+
+        .back-button {
+            position: absolute;
+            top: var(--spacing-m);
+            left: var(--spacing-m);
+            background-color: rgba(0, 0, 0, 0.5);
+            color: var(--text-color);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            z-index: 10;
+        }
+
+        .back-button:hover {
+            background-color: var(--highlight-color);
+            color: var(--text-color);
+        }
+
+        .details-video-player {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%; /* 16:9 Aspect Ratio */
+            background-color: black;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .details-video-player iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .details-content {
+            display: flex;
+            gap: var(--spacing-l);
+            align-items: flex-start;
+        }
+
+        .details-poster {
+            width: 300px; /* Fixed width for the poster */
+            flex-shrink: 0;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .details-info {
+            flex-grow: 1;
+        }
+
+        .details-title {
+            font-size: 3rem;
+            margin-bottom: var(--spacing-s);
+            color: var(--text-color);
+        }
+
+        .details-rating {
+            font-size: 1.5rem;
+            color: var(--gold-rating);
+            margin-bottom: var(--spacing-s);
+        }
+
+        .details-overview {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: #ccc;
+        }
+
+        .details-genres span {
+            display: inline-block;
+            background-color: var(--highlight-color);
+            color: var(--text-color);
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .download-button {
+            background-color: #2196F3; /* A nice blue for download */
+            color: var(--text-color);
+            border: none;
+            padding: var(--spacing-s) var(--spacing-l);
+            font-size: 1.1rem;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: var(--spacing-m); /* Space from genres/overview */
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            text-decoration: none; /* In case it's an anchor tag */
+            display: inline-block; /* Allows padding and margin, behaves like text for alignment */
+        }
+        
+        .download-button + .download-button {
+            margin-left: var(--spacing-s); /* Space between buttons */
+        }
+
+        .download-button:hover {
+            background-color: #0d47a1; /* Darker blue on hover */
+            transform: scale(1.02);
+        }
+
+        .add-list-button {
+            background-color: var(--accent-color); /* Use accent color for Add to List */
+        }
+
+        .add-list-button.added {
+            background-color: #4CAF50; /* Green for added state */
+        }
+
+        .add-list-button:hover {
+            background-color: var(--accent-hover-color);
+            transform: scale(1.02);
+        }
+        .add-list-button.added:hover {
+            background-color: #45a049; /* Darker green for added hover */
+        }
+
+
+        /* Responsive adjustments */
+        @media (max-width: 1024px) {
+            .details-title {
+                font-size: 2.5rem;
+            }
+            .details-rating {
+                font-size: 1.3rem;
+            }
+            .details-overview {
+                font-size: 1rem;
+            }
+            .download-button {
+                font-size: 1rem;
+                padding: var(--spacing-s) var(--spacing-m);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .details-container {
+                margin: var(--spacing-m) auto;
+                padding: var(--spacing-m);
+                flex-direction: column;
+            }
+            .details-content {
+                flex-direction: column;
+                align-items: center;
+                gap: var(--spacing-m);
+            }
+            .details-poster {
+                width: 250px;
+            }
+            .details-title {
+                font-size: 2rem;
+                text-align: center;
+            }
+            .details-rating {
+                font-size: 1.2rem;
+                text-align: center;
+            }
+            .details-overview {
+                font-size: 0.95rem;
+                text-align: center;
+            }
+            .details-genres {
+                text-align: center;
+            }
+            .back-button {
+                top: 10px;
+                left: 10px;
+                width: 35px;
+                height: 35px;
+                font-size: 1.3rem;
+            }
+            body {
+                padding-top: 60px; /* Adjust for smaller header on mobile */
+            }
+            .download-button {
+                width: 80%; /* Make button wider on small screens */
+                max-width: 300px;
+                margin-left: auto;
+                margin-right: auto;
+                display: block; /* Make it a block element to center with margin: auto */
+            }
+            .download-button + .download-button {
+                margin-left: auto; /* Center second button too */
+                margin-top: var(--spacing-s); /* Add vertical space */
+            }
+        }
+
+        @media (max-width: 480px) {
+            .details-container {
+                padding: var(--spacing-s);
+            }
+            .details-poster {
+                width: 200px;
+            }
+            .details-title {
+                font-size: 1.8rem;
+            }
+            .details-rating {
+                font-size: 1rem;
+            }
+            .details-overview {
+                font-size: 0.9rem;
+            }
+            .details-genres span {
+                font-size: 0.8rem;
+                padding: 3px 8px;
+            }
+            .download-button {
+                font-size: 0.95rem;
+                padding: var(--spacing-s) var(--spacing-m);
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-left">
+            <h1 class="logo"><a href="index.html" id="logo-link">HBMaxx</a></h1>
+            <nav>
+                <a href="index.html" id="home-link">Home</a>
+                <a href="index.html#my-list-section" id="my-list-link">My List</a>
+            </nav>
+        </div>
+        <div class="header-right">
+            <div class="search-box">
+                <button id="search-button-newpage"><i class="fas fa-search"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="details-container">
+            <button class="back-button" onclick="history.back();"><i class="fas fa-chevron-left"></i></button> 
+            <div class="details-video-player">
+                <iframe id="details-video-iframe" frameborder="0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                        allowfullscreen></iframe>
+            </div>
+            <div class="details-content">
+                <img id="details-poster" class="details-poster" src="" alt="Poster">
+                <div class="details-info">
+                    <h2 id="details-title" class="details-title"></h2>
+                    <div id="details-rating" class="details-rating"></div>
+                    <p id="details-overview" class="details-overview"></p>
+                    <div id="details-genres" class="details-genres"></div>
+                    
+                    <button class="download-button" id="mediafire-download-button">
+                        <i class="fas fa-download"></i> MEDIAFIRE DOWNLOAD
+                    </button>
+                    <button id="add-to-list-button" class="download-button add-list-button"><i class="fas fa-plus"></i> Add to List</button>
+                    
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="footer">
+        <p>Disclaimer: This site is for educational and demonstration purposes only. No copyright infringement intended. All content is sourced from public APIs like TMDB and other open-source resources. We do not host any copyrighted material.</p>
+        <p>© 2025 HBMaxx. All rights reserved.</p>
+    </div>
+
+    <div id="search-modal" class="modal">
+        <div class="search-modal-content">
+            <span class="close-button" onclick="closeSearchModal()">&times;</span>
+            <input type="text" id="search-modal-input" placeholder="Search for movies or TV shows..." onkeyup="searchTMDB()">
+            <div id="search-results">
+                </div>
+        </div>
+    </div>
+
+    <script src="newpage.js"></script>
+</body>
+</html>

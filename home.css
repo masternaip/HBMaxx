@@ -31,7 +31,7 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: var(--spacing-s) var(--spacing-xl); /* Keep general header padding */
+    padding: 0; /* REMOVE ALL PADDING FROM THE HEADER ITSELF */
     background-color: var(--dark-overlay);
     position: fixed;
     width: 100%;
@@ -44,20 +44,20 @@ header {
 
 .header-left {
     display: flex;
-    align-items: center; /* Crucial for vertical alignment of logo and nav */
-    /* Adjust this gap as needed to put space BETWEEN the logo and the nav links */
-    gap: var(--spacing-l); /* Example: 1.5rem (24px) - adjust if too much/little */
+    align-items: center;
+    /* Add the desired left padding here for the content within header-left */
+    padding-left: var(--spacing-xl); /* This sets the main left margin for desktop */
+    gap: var(--spacing-l); /* Space BETWEEN the logo and navigation links */
 }
 
 .logo {
     /* Target the h1 container of the logo image */
     margin: 0; /* Remove all default margins from h1 */
     padding: 0; /* Remove any default padding */
-    display: flex; /* Use flexbox to precisely center the image inside */
-    align-items: center; /* Vertically center the image */
-    justify-content: center; /* Horizontally center the image if the h1 has more width */
+    display: flex;
+    align-items: center; /* Vertically center the image inside */
+    justify-content: flex-start; /* Ensure logo image is at the start of its container */
     height: 100%; /* Make sure the h1 takes up available height in header-left */
-    /* Remove text-specific styling if the logo is purely an image */
     cursor: pointer;
     text-decoration: none;
     transition: filter 0.3s ease;
@@ -67,17 +67,16 @@ header {
     filter: brightness(1.2);
 }
 
+/* This rule was missing in your provided home.css and is crucial for image sizing */
 .header-logo {
-    /* Target the image itself */
-    max-height: 70px; /* Adjust this value. Try 60px, 70px, or 75px */
+    max-height: 70px; /* Adjust this value for your desired logo size (e.g., 60px, 75px) */
     width: auto;     /* Maintain aspect ratio */
-    display: block;  /* Essential: removes extra space below the image */
-    /* No margin or padding here to make it "pure" */
+    display: block;  /* Essential: removes extra space below inline images */
+    vertical-align: middle; /* Helps with vertical alignment */
 }
 
 nav {
-    /* No specific style needed for nav itself here, as its children are aligned by header-left */
-    /* Ensures nav items are vertically centered with logo due to .header-left align-items: center */
+    /* No specific style needed for nav itself here */
 }
 
 nav a {
@@ -85,9 +84,8 @@ nav a {
     text-decoration: none;
     margin: 0 var(--spacing-s); /* Spacing between nav links */
     font-size: 1rem;
-    padding: 0.25rem 0; /* Minimal vertical padding for click area, doesn't add much height */
+    padding: 0.25rem 0;
     transition: color 0.3s ease, font-weight 0.3s ease;
-    /* Ensure no extra padding or margin on the link that would push it */
 }
 
 nav a:hover {
@@ -98,6 +96,12 @@ nav a.active-nav {
     color: var(--highlight-color);
     font-weight: bold;
 }
+
+.header-right {
+    /* Add the desired right padding here for the content within header-right */
+    padding-right: var(--spacing-xl); /* This sets the main right margin for desktop */
+}
+
 .search-box button {
     background: transparent;
     border: none;
@@ -109,6 +113,85 @@ nav a.active-nav {
 
 .search-box button:hover {
     color: var(--highlight-color);
+}
+
+
+/* --- Responsive Design Adjustments --- */
+
+@media (max-width: 768px) {
+    header {
+        height: 60px; /* Adjust header height for smaller screens */
+    }
+
+    .header-left {
+        /* Set smaller padding for mobile, or 0 if you want it completely flush even with other content */
+        padding-left: var(--spacing-m); /* Smaller left margin for mobile */
+        gap: var(--spacing-s); /* Adjust gap between logo and nav for mobile */
+    }
+
+    .header-logo {
+        max-height: 45px; /* Adjust logo size for smaller screens */
+    }
+
+    nav a {
+        font-size: 0.9rem;
+    }
+
+    .header-right {
+        padding-right: var(--spacing-m); /* Smaller right margin for mobile */
+    }
+}
+
+@media (max-width: 480px) {
+    .header-left {
+        padding-left: var(--spacing-s); /* Even smaller left margin for very small screens */
+        gap: var(--spacing-xs); /* Even smaller gap */
+    }
+
+    .header-logo {
+        max-height: 40px; /* Adjust logo size for very small screens */
+    }
+
+    nav a {
+        font-size: 0.8rem;
+        margin: 0 var(--spacing-xs); /* Tighter spacing for nav links */
+    }
+
+    .header-right {
+        padding-right: var(--spacing-s); /* Even smaller right margin */
+    }
+}
+
+
+/* IMPORTANT: Re-adjust main content padding so it doesn't also hug the edges */
+#main-content {
+    /* Ensure main content starts below the fixed header */
+    padding-top: 100px; /* Adjust if 80px + some buffer is better, or use calc(80px + var(--spacing-s)) */
+    
+    /* Ensure main content has its own left and right padding */
+    padding-left: var(--spacing-xl); 
+    padding-right: var(--spacing-xl); 
+    padding-bottom: var(--spacing-xxl);
+    
+    position: relative;
+    z-index: 5;
+}
+
+/* For main content on smaller screens */
+@media (max-width: 768px) {
+    #main-content {
+        padding-top: 80px; /* Adjust for smaller header height */
+        padding-left: var(--spacing-m);
+        padding-right: var(--spacing-m);
+    }
+}
+
+@media (max-width: 480px) {
+    #main-content {
+        padding-top: 70px; /* Adjust for smallest header height */
+        padding-left: var(--spacing-s);
+        padding-right: var(--spacing-s);
+    }
 }
 
 /* --- Banner Styles (index.html) --- */

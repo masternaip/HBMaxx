@@ -49,14 +49,18 @@ header {
 }
 
 .logo {
-    color: var(--highlight-color);
-    font-size: 2rem;
+    /* Keep these existing styles */
+    color: var(--highlight-color); /* This color might not apply to the image, but it's fine */
+    font-size: 2rem; /* This will now affect the h1 container, not the image size */
     font-weight: bold;
     margin-right: var(--spacing-l);
     cursor: pointer;
-    text-decoration: none; /* Removes underline from the logo link */
-    transition: filter 0.3s ease; 
-    margin: 0;/* Smooth hover effect for logo */
+    text-decoration: none;
+    transition: filter 0.3s ease;
+    
+    /* ADD THIS to remove default h1 margin that can affect alignment */
+    margin-top: 0;
+    margin-bottom: 0;/* Smooth hover effect for logo */
 }
 
 .logo:hover {
@@ -80,19 +84,7 @@ nav a {
 }
 
 /* Also, modify your existing .logo rule to remove text-specific styling */
-.logo {
-    /* Keep these existing styles */
-    color: var(--highlight-color); /* This color might not apply to the image, but it's fine */
-    font-size: 2rem; /* This will now affect the h1 container, not the image size */
-    font-weight: bold;
-    margin-right: var(--spacing-l);
-    cursor: pointer;
-    text-decoration: none;
-    transition: filter 0.3s ease;
-    
-    /* ADD THIS to remove default h1 margin that can affect alignment */
-    margin-top: 0;
-    margin-bottom: 0;
+
 }
 nav a:hover {
     color: #e0e0e0; /* Lighter grey on hover */

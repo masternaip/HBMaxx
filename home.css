@@ -71,12 +71,29 @@ nav a {
     padding: 5px 10px; /* Adds vertical padding for a larger click area */
     transition: color 0.3s ease, font-weight 0.3s ease;
 }
+/* Add this new rule to your home.css */
 .header-logo {
-    max-height: 50px; /* Adjust as needed */
-    width: auto;
-    display: block; /* Important for removing extra space below inline images */
+    max-height: 60px; /* Adjust this value to control the height of your logo */
+    width: auto;     /* Maintain aspect ratio */
+    display: block;  /* Helps remove extra space below the image */
+    vertical-align: middle; /* Can help with alignment if needed */
 }
 
+/* Also, modify your existing .logo rule to remove text-specific styling */
+.logo {
+    /* Keep these existing styles */
+    color: var(--highlight-color); /* This color might not apply to the image, but it's fine */
+    font-size: 2rem; /* This will now affect the h1 container, not the image size */
+    font-weight: bold;
+    margin-right: var(--spacing-l);
+    cursor: pointer;
+    text-decoration: none;
+    transition: filter 0.3s ease;
+    
+    /* ADD THIS to remove default h1 margin that can affect alignment */
+    margin-top: 0;
+    margin-bottom: 0;
+}
 nav a:hover {
     color: #e0e0e0; /* Lighter grey on hover */
 }

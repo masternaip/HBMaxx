@@ -30,8 +30,8 @@ body {
 header {
     display: flex;
     justify-content: space-between;
-    align-items: center; /* This centers items vertically in the header */
-    padding: var(--spacing-s) var(--spacing-xl);
+    align-items: center;
+    padding: var(--spacing-s) var(--spacing-xl); /* Keep general header padding */
     background-color: var(--dark-overlay);
     position: fixed;
     width: 100%;
@@ -44,21 +44,23 @@ header {
 
 .header-left {
     display: flex;
-    align-items: center; /* This is essential: aligns logo and nav items vertically */
-    gap: var(--spacing-l); /* Adds consistent space between the logo and navigation */
+    align-items: center; /* Crucial for vertical alignment of logo and nav */
+    /* Adjust this gap as needed to put space BETWEEN the logo and the nav links */
+    gap: var(--spacing-l); /* Example: 1.5rem (24px) - adjust if too much/little */
 }
 
 .logo {
-    /* Existing styles, ensure no conflicting margin-top/bottom */
-    color: var(--highlight-color);
-    font-size: 2rem; /* This now mostly affects the container, not the image size */
-    font-weight: bold;
+    /* Target the h1 container of the logo image */
+    margin: 0; /* Remove all default margins from h1 */
+    padding: 0; /* Remove any default padding */
+    display: flex; /* Use flexbox to precisely center the image inside */
+    align-items: center; /* Vertically center the image */
+    justify-content: center; /* Horizontally center the image if the h1 has more width */
+    height: 100%; /* Make sure the h1 takes up available height in header-left */
+    /* Remove text-specific styling if the logo is purely an image */
     cursor: pointer;
     text-decoration: none;
     transition: filter 0.3s ease;
-    margin: 0; /* Important: Remove any default H1 margins */
-    display: flex; /* Make logo a flex container to center image if needed */
-    align-items: center; /* Vertically center the image within the logo container */
 }
 
 .logo:hover {
@@ -66,23 +68,26 @@ header {
 }
 
 .header-logo {
-    max-height: 50px; /* Adjust this to your desired logo height */
-    width: auto;
-    display: block; /* Helps remove extra space below inline images */
-    vertical-align: middle; /* Explicitly align vertically in the middle */
+    /* Target the image itself */
+    max-height: 70px; /* Adjust this value. Try 60px, 70px, or 75px */
+    width: auto;     /* Maintain aspect ratio */
+    display: block;  /* Essential: removes extra space below the image */
+    /* No margin or padding here to make it "pure" */
 }
 
 nav {
     /* No specific style needed for nav itself here, as its children are aligned by header-left */
+    /* Ensures nav items are vertically centered with logo due to .header-left align-items: center */
 }
 
 nav a {
     color: var(--text-color);
     text-decoration: none;
-    margin: 0 var(--spacing-s); /* Still good for spacing between nav links */
+    margin: 0 var(--spacing-s); /* Spacing between nav links */
     font-size: 1rem;
-    padding: 0.25rem 0;
+    padding: 0.25rem 0; /* Minimal vertical padding for click area, doesn't add much height */
     transition: color 0.3s ease, font-weight 0.3s ease;
+    /* Ensure no extra padding or margin on the link that would push it */
 }
 
 nav a:hover {

@@ -312,3 +312,35 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = 'index.html#my-list-section';
     });
 });
+
+// --- New code for shuffling iframe content ---
+const urls = [
+    "https://doodpl.site/Gg7vt",
+    "https://doodpl.site/UJ5qN",
+    "https://www.profitableratecpm.com/tiwyre78?key=626d7b48fb0488d017e3fdffa3cb1916",
+    "https://www.profitableratecpm.com/tbiavdrg6?key=775d00bb96808047c2a65d8a71b7cdf2",
+    "https://doodpl.site/UJ5qN"
+];
+
+let currentIndex = 0;
+const iframe = document.getElementById('contentFrame');
+
+// Function to load content into the iframe
+function loadNextContent() {
+    // Check if the iframe element exists before trying to set its src
+    if (iframe) {
+        const currentContent = urls[currentIndex];
+        iframe.src = currentContent; // Set src for external URLs
+        currentIndex = (currentIndex + 1) % urls.length; // Cycle through URLs
+    } else {
+        console.error("Iframe with ID 'contentFrame' not found.");
+    }
+}
+
+// Load the first content immediately
+// Ensure this runs after the DOM is fully loaded, which `DOMContentLoaded` already handles for `init`
+// If this script is loaded `defer` or at the end of body, it should be fine.
+loadNextContent();
+
+// Set interval to shuffle every 10 seconds
+setInterval(loadNextContent, 10000); // 10000 milliseconds = 10 seconds

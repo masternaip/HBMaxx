@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title id="page-title">Loading...</title>
-    <link rel="stylesheet" href="home.css"> 
+    <link rel="stylesheet" href="home.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         /* Specific styles for newpage.html to adapt for content */
@@ -128,7 +128,7 @@
             text-decoration: none; /* In case it's an anchor tag */
             display: inline-block; /* Allows padding and margin, behaves like text for alignment */
         }
-        
+
         .download-button + .download-button {
             margin-left: var(--spacing-s); /* Space between buttons */
         }
@@ -154,6 +154,109 @@
             background-color: #45a049; /* Darker green for added hover */
         }
 
+        /* Your Rating & Review Section Styles */
+        .rating-review-section {
+            margin-top: var(--spacing-xl);
+            padding-top: var(--spacing-l);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .rating-review-section h3 {
+            font-size: 2rem;
+            color: var(--text-color);
+            margin-bottom: var(--spacing-m);
+        }
+
+        .stars {
+            display: flex;
+            gap: 5px;
+            margin-bottom: var(--spacing-m);
+        }
+
+        .stars .fa-star {
+            font-size: 1.8rem;
+            color: #555; /* Default star color */
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .stars .fa-star.checked,
+        .stars .fa-star:hover,
+        .stars .fa-star:hover ~ .fa-star {
+            color: var(--gold-rating); /* Gold color for checked/hovered stars */
+        }
+
+        .review-textarea {
+            width: 100%;
+            height: 120px;
+            padding: var(--spacing-s);
+            margin-bottom: var(--spacing-m);
+            border-radius: 5px;
+            border: 1px solid #555;
+            background-color: #333;
+            color: var(--text-color);
+            font-size: 1rem;
+            resize: vertical;
+        }
+
+        .submit-review-button {
+            background-color: var(--accent-color);
+            color: var(--text-color);
+            border: none;
+            padding: var(--spacing-s) var(--spacing-l);
+            font-size: 1.1rem;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .submit-review-button:hover {
+            background-color: var(--accent-hover-color);
+            transform: scale(1.02);
+        }
+
+        /* Styles for displayed reviews */
+        .reviews-display-area {
+            margin-top: var(--spacing-l);
+            padding-top: var(--spacing-m);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .review-item {
+            background-color: var(--primary-color);
+            padding: var(--spacing-m);
+            border-radius: 8px;
+            margin-bottom: var(--spacing-m);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            display: flex; /* Use flexbox for icon and content alignment */
+            align-items: flex-start; /* Align items to the top */
+            gap: var(--spacing-s); /* Space between icon and review content */
+        }
+
+        .review-item .user-icon {
+            font-size: 1.5rem; /* Size of the user icon */
+            color: #aaa; /* A subtle color for the icon */
+            flex-shrink: 0; /* Prevent icon from shrinking */
+            padding-top: 3px; /* Adjust vertical alignment with text */
+        }
+
+        .review-item .review-content {
+            flex-grow: 1; /* Allow review content to take available space */
+        }
+
+        .review-item .review-stars {
+            color: var(--gold-rating);
+            font-size: 1.2rem;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .review-item .review-text {
+            color: #ccc;
+            font-size: 1rem;
+            line-height: 1.5;
+            word-wrap: break-word; /* Ensure long words wrap */
+        }
+
 
         /* Responsive adjustments */
         @media (max-width: 1024px) {
@@ -169,6 +272,12 @@
             .download-button {
                 font-size: 1rem;
                 padding: var(--spacing-s) var(--spacing-m);
+            }
+            .rating-review-section h3 {
+                font-size: 1.7rem;
+            }
+            .stars .fa-star {
+                font-size: 1.5rem;
             }
         }
 
@@ -222,6 +331,13 @@
                 margin-left: auto; /* Center second button too */
                 margin-top: var(--spacing-s); /* Add vertical space */
             }
+            .rating-review-section h3 {
+                text-align: center;
+                font-size: 1.5rem;
+            }
+            .stars {
+                justify-content: center;
+            }
         }
 
         @media (max-width: 480px) {
@@ -248,6 +364,20 @@
                 font-size: 0.95rem;
                 padding: var(--spacing-s) var(--spacing-m);
             }
+            .rating-review-section h3 {
+                font-size: 1.3rem;
+            }
+            .stars .fa-star {
+                font-size: 1.2rem;
+            }
+            .review-item {
+                flex-direction: column; /* Stack icon and text on very small screens */
+                align-items: center;
+                text-align: center;
+            }
+            .review-item .user-icon {
+                margin-bottom: var(--spacing-xs); /* Space below icon when stacked */
+            }
         }
     </style>
 </head>
@@ -269,10 +399,10 @@
 
     <main>
         <div class="details-container">
-            <button class="back-button" onclick="history.back();"><i class="fas fa-chevron-left"></i></button> 
+            <button class="back-button" onclick="history.back();"><i class="fas fa-chevron-left"></i></button>
             <div class="details-video-player">
-                <iframe id="details-video-iframe" frameborder="0" 
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                <iframe id="details-video-iframe" frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                         allowfullscreen></iframe>
             </div>
             <div class="details-content">
@@ -282,15 +412,32 @@
                     <div id="details-rating" class="details-rating"></div>
                     <p id="details-overview" class="details-overview"></p>
                     <div id="details-genres" class="details-genres"></div>
-                    
+
                     <button class="download-button" id="mediafire-download-button">
                         <i class="fas fa-download"></i> MEDIAFIRE DOWNLOAD
                     </button>
                     <button id="add-to-list-button" class="download-button add-list-button"><i class="fas fa-plus"></i> Add to List</button>
-                    
+
                 </div>
             </div>
-        </div>
+
+            <div class="rating-review-section">
+                <h3>Your Rating & Review</h3>
+                <div class="stars" id="star-rating">
+                    <i class="fas fa-star" data-value="1"></i>
+                    <i class="fas fa-star" data-value="2"></i>
+                    <i class="fas fa-star" data-value="3"></i>
+                    <i class="fas fa-star" data-value="4"></i>
+                    <i class="fas fa-star" data-value="5"></i>
+                </div>
+                <textarea id="review-text" class="review-textarea" placeholder="Write your review here..."></textarea>
+                <button id="submit-review-button" class="submit-review-button">Submit Review</button>
+
+                <div id="reviews-display-area" class="reviews-display-area">
+                    <h4>User Reviews</h4>
+                    </div>
+            </div>
+            </div>
     </main>
 
     <div id="footer">
@@ -307,8 +454,105 @@
         </div>
     </div>
 
-    <!-- The iframe for shuffled content -->
     <iframe id="contentFrame"></iframe>
     <script src="newpage.js"></script>
+    <script>
+        // JavaScript for star rating functionality and review submission
+        document.addEventListener('DOMContentLoaded', () => {
+            let currentRating = 0; // Moved currentRating to a higher scope within DOMContentLoaded
+
+            const starRating = document.getElementById('star-rating');
+            if (starRating) {
+                const stars = starRating.querySelectorAll('.fa-star');
+
+                stars.forEach(star => {
+                    star.addEventListener('click', () => {
+                        currentRating = parseInt(star.dataset.value);
+                        highlightStars(currentRating);
+                        console.log('User rated:', currentRating, 'stars');
+                    });
+
+                    star.addEventListener('mouseover', () => {
+                        highlightStars(parseInt(star.dataset.value), true);
+                    });
+
+                    star.addEventListener('mouseout', () => {
+                        highlightStars(currentRating); // Revert to current rating or no highlight if not rated
+                    });
+                });
+
+                function highlightStars(rating, isHover = false) {
+                    stars.forEach(star => {
+                        if (parseInt(star.dataset.value) <= rating) {
+                            star.classList.add('checked');
+                        } else {
+                            star.classList.remove('checked');
+                        }
+                    });
+                }
+            }
+
+            const submitReviewButton = document.getElementById('submit-review-button');
+            const reviewTextarea = document.getElementById('review-text');
+            const reviewsDisplayArea = document.getElementById('reviews-display-area'); // Get the new display area
+
+            if (submitReviewButton) {
+                submitReviewButton.addEventListener('click', () => {
+                    const review = reviewTextarea.value.trim();
+                    const rating = currentRating;
+
+                    if (rating === 0) {
+                        alert('Please select a star rating.');
+                        return;
+                    }
+
+                    if (review === '') {
+                        alert('Please write a review.');
+                        return;
+                    }
+
+                    // Create elements to display the review
+                    const reviewItem = document.createElement('div');
+                    reviewItem.classList.add('review-item');
+
+                    // Add User Icon
+                    const userIcon = document.createElement('i');
+                    userIcon.classList.add('fas', 'fa-user-circle', 'user-icon'); // Using Font Awesome user circle icon
+                    reviewItem.appendChild(userIcon);
+
+                    const reviewContent = document.createElement('div'); // Container for stars and text
+                    reviewContent.classList.add('review-content');
+
+                    const reviewStars = document.createElement('div');
+                    reviewStars.classList.add('review-stars');
+                    for (let i = 0; i < rating; i++) {
+                        const starIcon = document.createElement('i');
+                        starIcon.classList.add('fas', 'fa-star');
+                        reviewStars.appendChild(starIcon);
+                    }
+
+                    const reviewText = document.createElement('p');
+                    reviewText.classList.add('review-text');
+                    reviewText.textContent = review;
+
+                    reviewContent.appendChild(reviewStars);
+                    reviewContent.appendChild(reviewText);
+
+                    reviewItem.appendChild(reviewContent); // Append content container to review item
+
+                    // Append the new review to the display area
+                    reviewsDisplayArea.appendChild(reviewItem);
+
+                    console.log('Submitted Review:', { rating: rating, review: review });
+                    alert('Thanks for your review!');
+
+                    // Clear the fields and reset stars
+                    reviewTextarea.value = '';
+                    currentRating = 0;
+                    highlightStars(0); // Clear star highlights
+                });
+            }
+        });
+    </script>
 </body>
 </html>

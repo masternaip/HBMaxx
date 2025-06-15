@@ -69,6 +69,23 @@
                 </div>
         </section>
 
+<section class="movie-section">
+    <h2>Watch History</h2>
+    <div class="movie-list-container">
+        <button class="scroll-btn prev" onclick="scrollMovieList('watch-history-list', 'left')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15,18 9,12 15,6"></polyline>
+            </svg>
+        </button>
+        <div class="movie-list" id="watch-history-list"></div>
+        <button class="scroll-btn next" onclick="scrollMovieList('watch-history-list', 'right')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9,18 15,12 9,6"></polyline>
+            </svg>
+        </button>
+    </div>
+</section>
+
         <section id="my-list-section" style="display:none;">
             <h2>My List</h2>
             <div class="list-container" id="my-list-container">

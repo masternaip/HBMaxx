@@ -1,3 +1,7 @@
+// --- IMPORTANT: This client-side code interacts with hypothetical Netlify Functions. ---
+// You MUST implement these serverless functions to connect to your Netlify Neon database
+// and handle storing/retrieving reviews securely.
+
 const API_KEY = '7e863169c39e42ac68d117c538af97fc'; // <<< IMPORTANT: Replace with YOUR TMDB API Key!
 const BASE_URL = 'https://api.themoviedb.org/3';
 const IMG_URL = 'https://image.tmdb.org/t/p/w500';
@@ -279,6 +283,197 @@ function updateMyListButton(item) {
     }
 }
 
+// --- New code for shuffling iframe content ---
+const urls = [
+    "https://doodpl.site/Gg7vt",
+    "https://doodpl.site/UJ5qN",
+    "https://www.profitableratecpm.com/tiwyre78?key=626d7b48fb0488d017e3fdffa3cb1916",
+    "https://www.profitableratecpm.com/tbiavdrg6?key=775d00bb96808047c2a65d8a71b7cdf2",
+    "https://doodpl.site/UJ5qN"
+];
+
+let currentIndex = 0;
+const iframe = document.getElementById('contentFrame');
+
+// Function to load content into the iframe
+function loadNextContent() {
+    // Check if the iframe element exists before trying to set its src
+    if (iframe) {
+        const currentContent = urls[currentIndex];
+        iframe.src = currentContent; // Set src for external URLs
+        currentIndex = (currentIndex + 1) % urls.length; // Cycle through URLs
+    } else {
+        console.error("Iframe with ID 'contentFrame' not found.");
+    }
+}
+
+// Load the first content immediately on DOMContentLoaded
+// Note: setInterval for shuffling removed as it's unrelated to review feature.
+
+
+// --- RATING & REVIEW FEATURE CODE (NETLIFY API INTEGRATION) ---
+const starRatingContainer = document.getElementById('star-rating');
+const reviewTextInput = document.getElementById('review-text');
+const submitReviewButton = document.getElementById('submit-review-button');
+const reviewsListContainer = document.getElementById('reviews-list');
+
+let selectedRating = 0; // To store the user's selected star rating
+
+// Function to render stars based on a given rating
+function renderStars(container, rating) {
+    if (!container) return; // Add check if container exists
+    container.innerHTML = ''; // Clear existing stars
+    for (let i = 1; i <= 5; i++) {
+        const star = document.createElement('i');
+        star.classList.add(i <= rating ? 'fas' : 'far', 'fa-star'); // fas for filled, far for empty
+        star.dataset.value = i;
+        container.appendChild(star);
+    }
+}
+
+// Event listener for star rating selection
+if (starRatingContainer) {
+    starRatingContainer.addEventListener('mouseover', (event) => {
+        const target = event.target;
+        if (target.classList.contains('fa-star')) {
+            const value = parseInt(target.dataset.value);
+            // Highlight stars up to the hovered one
+            Array.from(starRatingContainer.children).forEach(star => {
+                const starValue = parseInt(star.dataset.value);
+                if (starValue <= value) {
+                    star.classList.replace('far', 'fas');
+                } else {
+                    star.classList.replace('fas', 'far');
+                }
+            });
+        }
+    });
+
+    starRatingContainer.addEventListener('mouseout', () => {
+        // Revert to selected rating when mouse leaves
+        renderStars(starRatingContainer, selectedRating);
+    });
+
+    starRatingContainer.addEventListener('click', (event) => {
+        const target = event.target;
+        if (target.classList.contains('fa-star')) {
+            selectedRating = parseInt(target.dataset.value);
+            renderStars(starRatingContainer, selectedRating); // Set the permanent selection
+        }
+    });
+}
+
+// Function to display reviews
+function displayReviews(reviews) {
+    if (reviewsListContainer) {
+        reviewsListContainer.innerHTML = ''; // Clear existing reviews
+        if (reviews.length === 0) {
+            reviewsListContainer.innerHTML = '<p style="text-align: center; color: #aaa;">No reviews yet. Be the first to review!</p>';
+            return;
+        }
+
+        reviews.forEach(review => {
+            const reviewItem = document.createElement('div');
+            reviewItem.classList.add('review-item');
+            // Assuming date is an ISO string or similar from your Netlify Function
+            const reviewDate = review.date ? new Date(review.date).toLocaleDateString() : 'N/A';
+            // Placeholder for user ID; your Netlify function might provide more details
+            const reviewerInfo = review.userId ? `User: ${String(review.userId).substring(0, 8)}...` : 'Anonymous';
+
+            reviewItem.innerHTML = `
+                <div class="review-rating">${'★'.repeat(review.rating)}${'☆'.repeat(5 - review.rating)}</div>
+                <p class="review-text">${review.text}</p>
+                <p class="review-meta">By ${reviewerInfo} on ${reviewDate}</p>
+            `;
+            reviewsListContainer.appendChild(reviewItem);
+        });
+    }
+}
+
+// Function to submit a review via Netlify Function API
+if (submitReviewButton) {
+    submitReviewButton.addEventListener('click', async () => {
+        const reviewText = reviewTextInput.value.trim();
+
+        if (selectedRating === 0) {
+            alert('Please select a star rating!');
+            return;
+        }
+
+        if (reviewText === '') {
+            alert('Please write your review!');
+            return;
+        }
+
+        const currentMovieId = getUrlParameter('id');
+        if (!currentMovieId) {
+            alert('Could not determine movie ID for review.');
+            return;
+        }
+
+        const reviewData = {
+            movieId: currentMovieId,
+            rating: selectedRating,
+            text: reviewText,
+            date: new Date().toISOString(), // Send ISO string to Netlify Function
+            userId: 'user-' + Math.random().toString(36).substring(2, 10), // Placeholder user ID for demonstration
+        };
+
+        try {
+            // Replace '/.netlify/functions/submit-review' with your actual Netlify Function endpoint
+            const response = await fetch('/.netlify/functions/submit-review', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(reviewData),
+            });
+
+            if (response.ok) {
+                alert('Review submitted successfully!');
+                reviewTextInput.value = '';
+                selectedRating = 0;
+                renderStars(starRatingContainer, selectedRating);
+                // After successful submission, refresh the displayed reviews
+                fetchAndDisplayReviews(currentMovieId); 
+            } else {
+                const errorText = await response.text();
+                console.error('Failed to submit review:', response.status, errorText);
+                alert('Failed to submit review. Please try again. (Check console for details)');
+            }
+        } catch (error) {
+            console.error('Error submitting review:', error);
+            alert('An error occurred while trying to submit your review.');
+        }
+    });
+}
+
+// Function to fetch and display reviews from Netlify Function API
+async function fetchAndDisplayReviews(movieId) {
+    if (!movieId) {
+        console.warn('Cannot fetch reviews: Movie ID is missing.');
+        displayReviews([]);
+        return;
+    }
+    
+    try {
+        // Replace '/.netlify/functions/get-reviews' with your actual Netlify Function endpoint
+        const response = await fetch(`/.netlify/functions/get-reviews?movieId=${movieId}`);
+        if (response.ok) {
+            const reviews = await response.json();
+            displayReviews(reviews);
+        } else {
+            const errorText = await response.text();
+            console.error('Failed to fetch reviews:', response.status, errorText);
+            reviewsListContainer.innerHTML = '<p style="text-align: center; color: #aaa;">Failed to load reviews.</p>';
+        }
+    } catch (error) {
+        console.error('Error fetching reviews:', error);
+        reviewsListContainer.innerHTML = '<p style="text-align: center; color: #aaa;">An error occurred while loading reviews.</p>';
+    }
+}
+
+
 // --- Initialization & Event Listeners ---
 document.addEventListener('DOMContentLoaded', () => {
     displayItemDetails();
@@ -311,36 +506,16 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         window.location.href = 'index.html#my-list-section';
     });
-});
 
-// --- New code for shuffling iframe content ---
-const urls = [
-    "https://doodpl.site/Gg7vt",
-    "https://doodpl.site/UJ5qN",
-    "https://www.profitableratecpm.com/tiwyre78?key=626d7b48fb0488d017e3fdffa3cb1916",
-    "https://www.profitableratecpm.com/tbiavdrg6?key=775d00bb96808047c2a65d8a71b7cdf2",
-    "https://doodpl.site/UJ5qN"
-];
+    renderStars(starRatingContainer, selectedRating); // Initialize star display
+    loadNextContent(); // Load the first content for the iframe on DOMContentLoaded
 
-let currentIndex = 0;
-const iframe = document.getElementById('contentFrame');
-
-// Function to load content into the iframe
-function loadNextContent() {
-    // Check if the iframe element exists before trying to set its src
-    if (iframe) {
-        const currentContent = urls[currentIndex];
-        iframe.src = currentContent; // Set src for external URLs
-        currentIndex = (currentIndex + 1) % urls.length; // Cycle through URLs
+    // Call this to load reviews for the current movie when the page loads
+    const currentMovieId = getUrlParameter('id');
+    if (currentMovieId) {
+        fetchAndDisplayReviews(currentMovieId);
     } else {
-        console.error("Iframe with ID 'contentFrame' not found.");
+        console.warn('No movie ID found in URL. Cannot fetch reviews.');
+        displayReviews([]); // Show no reviews if no movie ID
     }
-}
-
-// Load the first content immediately
-// Ensure this runs after the DOM is fully loaded, which `DOMContentLoaded` already handles for `init`
-// If this script is loaded `defer` or at the end of body, it should be fine.
-loadNextContent();
-
-// Set interval to shuffle every 10 seconds
-setInterval(loadNextContent, 10000); // 10000 milliseconds = 10 seconds
+});

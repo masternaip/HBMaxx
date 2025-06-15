@@ -403,3 +403,46 @@ loadNextContent();
 
 // Set interval to shuffle every 10 seconds
 setInterval(loadNextContent, 10000); // 10000 milliseconds = 10 seconds
+
+// Watch History
+function addToWatchHistory(item) {
+    let history = JSON.parse(localStorage.getItem('watchHistory')) || []; // 
+    // Ensure item has necessary properties
+    const historyItem = {
+        id: item.id, // 
+        title: item.title || item.name, // 
+        poster_path: item.poster_path, // 
+        media_type: item.media_type || (item.title ? 'movie' : 'tv'), // 
+        timestamp: new Date().toISOString() // 
+    };
+
+    // Remove if already exists to move it to the top/most recent
+    history = history.filter(h => !(h.id === historyItem.id && h.media_type === historyItem.media_type)); // 
+
+    history.unshift(historyItem); // Add to the beginning // 
+
+    // Keep history to a reasonable size, e.g., 50 items
+    localStorage.setItem('watchHistory', JSON.stringify(history.slice(0, 50))); // 
+    displayWatchHistory(); // Update the UI // 
+}
+
+function displayWatchHistory() {
+    const history = JSON.parse(localStorage.getItem('watchHistory')) || []; // 
+    const container = document.getElementById('watch-history-list'); // 
+    if (!container) return; // 
+
+    if (history.length === 0) {
+        container.innerHTML = '<p class="search-placeholder">No watch history yet.</p>'; // 
+        return; // 
+    }
+
+    container.innerHTML = history.map(item => `
+        <div class="movie-item" onclick="handleMovieClick(${JSON.stringify(item).replace(/"/g, '\'')})">
+            <img src="${item.poster_path ? IMG_URL + item.poster_path : 'https://via.placeholder.com/200x300?text=No+Image'}"
+                 alt="${item.title || item.name}" loading="lazy">
+            <div class="movie-overlay">
+                <div class="movie-title">${item.title || item.name}</div>
+            </div>
+        </div>
+    `).join(''); // 
+}

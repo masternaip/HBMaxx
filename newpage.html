@@ -1,389 +1,558 @@
-const API_KEY = '7e863169c39e42ac68d117c538af97fc'; // <<< IMPORTANT: Replace with YOUR TMDB API Key!
-const BASE_URL = 'https://api.themoviedb.org/3';
-const IMG_URL = 'https://image.tmdb.org/t/p/w500';
-const VIDEASY_BASE_URL = 'https://player.videasy.net/'; // Your preferred embed server
-const INTERSTITIAL_URL = 'https://doodpl.site/uwzgd'; // The URL for the first click redirection
-
-// --- DOM Elements for newpage.html ---
-const pageTitleElement = document.getElementById('page-title');
-const detailsVideoIframe = document.getElementById('details-video-iframe');
-const detailsPoster = document.getElementById('details-poster');
-const detailsTitleElement = document.getElementById('details-title');
-const detailsRatingElement = document.getElementById('details-rating');
-const detailsOverview = document.getElementById('details-overview');
-const detailsGenres = document.getElementById('details-genres');
-const mediafireDownloadButton = document.getElementById('mediafire-download-button');
-const addToListButton = document.getElementById('add-to-list-button'); // NEW: Add to List button
-
-
-// --- DOM Elements for Search Modal ---
-const searchModal = document.getElementById('search-modal');
-const searchModalInput = document.getElementById('search-modal-input');
-const searchResultsContainer = document.getElementById('search-results');
-const newpageSearchButton = document.getElementById('search-button-newpage');
-
-// My List array - loaded from localStorage
-let myList = JSON.parse(localStorage.getItem('myList')) || [];
-
-let actualMediafireLink = 'https://www.mediafire.com/file/example_download_link'; // !!! IMPORTANT: Replace with your actual MediaFire link or logic to get it !!!
-
-// --- Helper to get URL parameters ---
-function getUrlParameter(name) {
-    name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
-    var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
-    var results = regex.exec(location.search);
-    return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
-}
-
-// --- Data Fetching ---
-async function fetchItemDetails(id, type) {
-    try {
-        const res = await fetch(`${BASE_URL}/${type}/${id}?api_key=${API_KEY}&append_to_response=videos,genres`);
-        if (!res.ok) {
-            throw new Error(`Error fetching details for ${type} ${id}: ${res.statusText}`);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="page-title">Loading...</title>
+    <link rel="stylesheet" href="home.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Specific styles for newpage.html to adapt for content */
+        body {
+            background-color: var(--primary-color);
+            color: var(--text-color);
+            padding-top: 80px; /* Space for the fixed header */
         }
-        return await res.json();
-    } catch (error) {
-        console.error("Failed to fetch item details:", error);
-        return null;
-    }
-}
 
-// --- Display Details Function ---
-async function displayItemDetails() {
-    const itemId = getUrlParameter('id');
-    const itemType = getUrlParameter('type'); // 'movie' or 'tv'
-
-    if (!itemId || (!itemType || (itemType !== 'movie' && itemType !== 'tv'))) {
-        pageTitleElement.textContent = "Error: Item Not Found";
-        detailsTitleElement.textContent = "Error: Item ID or type missing.";
-        detailsOverview.textContent = "Please return to the home page and select an item.";
-        mediafireDownloadButton.style.display = 'none'; // Hide button on error
-        if (addToListButton) addToListButton.style.display = 'none'; // Hide add to list button
-        return;
-    }
-
-    const item = await fetchItemDetails(itemId, itemType);
-
-    if (!item) {
-        pageTitleElement.textContent = "Error: Item Not Found";
-        detailsTitleElement.textContent = "Error: Could not load item details.";
-        detailsOverview.textContent = "The requested movie or TV show could not be found.";
-        mediafireDownloadButton.style.display = 'none'; // Hide button on error
-        if (addToListButton) addToListButton.style.display = 'none'; // Hide add to list button
-        return;
-    }
-
-    // Set page title
-    pageTitleElement.textContent = item.title || item.name || 'Details';
-
-    // Set poster
-    if (item.poster_path) {
-        detailsPoster.src = `${IMG_URL}${item.poster_path}`;
-        detailsPoster.alt = item.title || item.name;
-    } else {
-        detailsPoster.style.display = 'none'; // Hide poster if not available
-    }
-
-    // Set title, overview, rating
-    detailsTitleElement.textContent = item.title || item.name;
-    detailsOverview.textContent = item.overview || 'No description available.';
-
-    // Display star rating
-    detailsRatingElement.innerHTML = '';
-    const ratingStars = Math.round((item.vote_average || 0) / 2);
-    for (let i = 0; i < 5; i++) {
-        const starIcon = document.createElement('i');
-        starIcon.classList.add('fas', 'fa-star');
-        if (i < ratingStars) {
-            starIcon.style.color = 'var(--gold-rating)';
-        } else {
-            starIcon.style.color = 'gray';
+        .details-container {
+            max-width: 1200px;
+            margin: var(--spacing-xl) auto;
+            padding: var(--spacing-l);
+            background-color: var(--secondary-color);
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-l);
+            position: relative;
         }
-        detailsRatingElement.appendChild(starIcon);
-    }
 
-    // Display genres
-    detailsGenres.innerHTML = '';
-    if (item.genres && item.genres.length > 0) {
-        item.genres.forEach(genre => {
-            const span = document.createElement('span');
-            span.textContent = genre.name;
-            detailsGenres.appendChild(span);
-        });
-    } else {
-        const span = document.createElement('span');
-        span.textContent = 'No genres available';
-        detailsGenres.appendChild(span);
-    }
-
-    // --- Add to List Button Logic (NEW) ---
-    if (addToListButton) {
-        addToListButton.style.display = 'inline-block'; // Ensure button is visible
-        updateMyListButton(item); // Set initial state
-        addToListButton.onclick = () => {
-            toggleMyList(item); // Toggle and update button
-        };
-    } else {
-        console.warn("Add to List button not found in newpage.html");
-    }
-
-    // --- MediaFire Download Button Logic ---
-    mediafireDownloadButton.style.display = 'inline-block'; // Ensure button is visible
-    
-    // Set up the click handler for the MediaFire button
-    mediafireDownloadButton.onclick = (event) => {
-        event.preventDefault(); // Prevent the default link behavior immediately
-
-        const downloadRedirectKey = `mediafire_redirect_${itemId}_${itemType}`;
-        const hasRedirectedForDownload = sessionStorage.getItem(downloadRedirectKey);
-
-        if (hasRedirectedForDownload) {
-            sessionStorage.removeItem(downloadRedirectKey); 
-            window.open(actualMediafireLink, '_blank');
-        } else {
-            sessionStorage.setItem(downloadRedirectKey, 'true'); 
-            window.open(INTERSTITIAL_URL, '_blank');
+        .back-button {
+            position: absolute;
+            top: var(--spacing-m);
+            left: var(--spacing-m);
+            background-color: rgba(0, 0, 0, 0.5);
+            color: var(--text-color);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            z-index: 10;
         }
-    };
 
-    // Load video player
-    loadVideoPlayer(item, itemType);
-}
-
-function loadVideoPlayer(item, type) {
-    let embedURL;
-    if (type === "tv") {
-        embedURL = `${VIDEASY_BASE_URL}tv/${item.id}/1/1?episodeSelector=true`;
-    } else {
-        embedURL = `${VIDEASY_BASE_URL}movie/${item.id}`;
-    }
-    
-    detailsVideoIframe.src = embedURL;
-    console.log("Attempting to load video from URL:", embedURL);
-}
-
-
-// --- Search Modal Logic ---
-function openSearchModal() {
-    if (searchModal) {
-        searchModal.style.display = 'flex';
-        searchModalInput.focus();
-        document.body.style.overflow = 'hidden';
-    } else {
-        console.error("Search modal not found.");
-    }
-}
-
-function closeSearchModal() {
-    if (searchModal) {
-        searchModal.style.display = 'none';
-        searchResultsContainer.innerHTML = '';
-        searchModalInput.value = '';
-        document.body.style.overflow = 'auto';
-    } else {
-        console.error("Search modal not found during close attempt.");
-    }
-}
-
-async function searchTMDB() {
-    const query = searchModalInput.value;
-    if (!query.trim()) {
-        searchResultsContainer.innerHTML = '';
-        return;
-    }
-
-    try {
-        const res = await fetch(`${BASE_URL}/search/multi?api_key=${API_KEY}&query=${encodeURIComponent(query)}`);
-        const data = await res.json();
-
-        searchResultsContainer.innerHTML = '';
-        data.results.forEach(item => {
-            if (!item.poster_path || (item.media_type !== 'movie' && item.media_type !== 'tv')) return;
-            
-            const img = document.createElement('img');
-            img.src = `${IMG_URL}${item.poster_path}`;
-            img.alt = item.title || item.name;
-            img.loading = "lazy";
-            img.onclick = (event) => {
-                showDetailsFromSearch(item, event, true); 
-            };
-            searchResultsContainer.appendChild(img);
-        });
-    } catch (error) {
-        console.error("Error during search:", error);
-        searchResultsContainer.innerHTML = '<p style="color: #aaa;">Failed to load search results.</p>';
-    }
-}
-
-function showDetailsFromSearch(item, event = null, fromSearchModal = false) {
-    if (event) {
-        event.preventDefault();
-    }
-
-    const type = item.first_air_date ? "tv" : "movie";
-    const itemId = item.id;
-    const itemType = type;
-
-    const interstitialRedirectKey = `interstitial_redirect_${itemId}_${itemType}`;
-    const hasRedirected = sessionStorage.getItem(interstitialRedirectKey);
-
-    if (hasRedirected) {
-        sessionStorage.removeItem(interstitialRedirectKey);
-        window.open(`newpage.html?id=${itemId}&type=${itemType}`, '_blank');
-        if (fromSearchModal) {
-            closeSearchModal();
+        .back-button:hover {
+            background-color: var(--highlight-color);
+            color: var(--text-color);
         }
-    } else {
-        sessionStorage.setItem(interstitialRedirectKey, 'true');
-        window.open(INTERSTITIAL_URL, '_blank');
-    }
-}
 
-// --- My List Logic (Copied from home.js and adapted for newpage.js) ---
-function toggleMyList(item) {
-    const type = item.first_air_date ? 'tv' : 'movie';
-    const itemToStore = {
-        id: item.id,
-        type: type,
-        title: item.title || item.name,
-        poster_path: item.poster_path,
-        backdrop_path: item.backdrop_path
-    };
-
-    const index = myList.findIndex(i => i.id === itemToStore.id && i.type === itemToStore.type);
-    if (index > -1) {
-        myList.splice(index, 1);
-        console.log(`Removed ${itemToStore.title} from My List`);
-    } else {
-        myList.push(itemToStore);
-        console.log(`Added ${itemToStore.title} to My List`);
-    }
-    localStorage.setItem('myList', JSON.stringify(myList));
-    // Update button state immediately
-    updateMyListButton(item);
-}
-
-function updateMyListButton(item) {
-    if (!addToListButton) return; // Ensure button exists
-
-    const type = item.first_air_date ? 'tv' : 'movie';
-    const isInList = myList.some(i => i.id === item.id && i.type === type);
-
-    if (isInList) {
-        addToListButton.innerHTML = '<i class="fas fa-check"></i> Added to List';
-        addToListButton.classList.add('added'); 
-    } else {
-        addToListButton.innerHTML = '<i class="fas fa-plus"></i> Add to List';
-        addToListButton.classList.remove('added');
-    }
-}
-
-// --- Initialization & Event Listeners ---
-document.addEventListener('DOMContentLoaded', () => {
-    displayItemDetails();
-
-    // Event listener for search button on newpage.html
-    if (newpageSearchButton) {
-        newpageSearchButton.addEventListener('click', openSearchModal);
-    }
-
-    // Global click listener for closing search modal when clicking outside
-    // This is needed because the modal is `position: fixed` and covers the whole screen.
-    window.addEventListener('click', (event) => {
-        if (event.target == searchModal) {
-            closeSearchModal();
+        .details-video-player {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%; /* 16:9 Aspect Ratio */
+            background-color: black;
+            border-radius: 8px;
+            overflow: hidden;
         }
-    });
 
-    // Header Navigation for newpage.html (Navigates to index.html in current tab)
-    document.getElementById('logo-link').addEventListener('click', (e) => {
-        e.preventDefault();
-        window.location.href = 'index.html'; 
-    });
+        .details-video-player iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
 
-    document.getElementById('home-link').addEventListener('click', (e) => {
-        e.preventDefault();
-        window.location.href = 'index.html'; 
-    });
+        .details-content {
+            display: flex;
+            gap: var(--spacing-l);
+            align-items: flex-start;
+        }
 
-    document.getElementById('my-list-link').addEventListener('click', (e) => {
-        e.preventDefault();
-        window.location.href = 'index.html#my-list-section';
-    });
-});
+        .details-poster {
+            width: 300px; /* Fixed width for the poster */
+            flex-shrink: 0;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
 
-// --- New code for shuffling iframe content ---
-const urls = [
-    "https://doodpl.site/Gg7vt",
-    "https://doodpl.site/UJ5qN",
-    "https://www.profitableratecpm.com/tiwyre78?key=626d7b48fb0488d017e3fdffa3cb1916",
-    "https://www.profitableratecpm.com/tbiavdrg6?key=775d00bb96808047c2a65d8a71b7cdf2",
-    "https://doodpl.site/UJ5qN"
-];
+        .details-info {
+            flex-grow: 1;
+        }
 
-let currentIndex = 0;
-const iframe = document.getElementById('contentFrame');
+        .details-title {
+            font-size: 3rem;
+            margin-bottom: var(--spacing-s);
+            color: var(--text-color);
+        }
 
-// Function to load content into the iframe
-function loadNextContent() {
-    // Check if the iframe element exists before trying to set its src
-    if (iframe) {
-        const currentContent = urls[currentIndex];
-        iframe.src = currentContent; // Set src for external URLs
-        currentIndex = (currentIndex + 1) % urls.length; // Cycle through URLs
-    } else {
-        console.error("Iframe with ID 'contentFrame' not found.");
-    }
-}
+        .details-rating {
+            font-size: 1.5rem;
+            color: var(--gold-rating);
+            margin-bottom: var(--spacing-s);
+        }
 
-// Load the first content immediately
-// Ensure this runs after the DOM is fully loaded, which `DOMContentLoaded` already handles for `init`
-// If this script is loaded `defer` or at the end of body, it should be fine.
-loadNextContent();
+        .details-overview {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: #ccc;
+        }
 
-// Set interval to shuffle every 10 seconds
-setInterval(loadNextContent, 10000); // 10000 milliseconds = 10 seconds
+        .details-genres span {
+            display: inline-block;
+            background-color: var(--highlight-color);
+            color: var(--text-color);
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
 
-// Watch History
-function addToWatchHistory(item) {
-    let history = JSON.parse(localStorage.getItem('watchHistory')) || []; // 
-    // Ensure item has necessary properties
-    const historyItem = {
-        id: item.id, // 
-        title: item.title || item.name, // 
-        poster_path: item.poster_path, // 
-        media_type: item.media_type || (item.title ? 'movie' : 'tv'), // 
-        timestamp: new Date().toISOString() // 
-    };
+        .download-button {
+            background-color: #2196F3; /* A nice blue for download */
+            color: var(--text-color);
+            border: none;
+            padding: var(--spacing-s) var(--spacing-l);
+            font-size: 1.1rem;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: var(--spacing-m); /* Space from genres/overview */
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            text-decoration: none; /* In case it's an anchor tag */
+            display: inline-block; /* Allows padding and margin, behaves like text for alignment */
+        }
 
-    // Remove if already exists to move it to the top/most recent
-    history = history.filter(h => !(h.id === historyItem.id && h.media_type === historyItem.media_type)); // 
+        .download-button + .download-button {
+            margin-left: var(--spacing-s); /* Space between buttons */
+        }
 
-    history.unshift(historyItem); // Add to the beginning // 
+        .download-button:hover {
+            background-color: #0d47a1; /* Darker blue on hover */
+            transform: scale(1.02);
+        }
 
-    // Keep history to a reasonable size, e.g., 50 items
-    localStorage.setItem('watchHistory', JSON.stringify(history.slice(0, 50))); // 
-    displayWatchHistory(); // Update the UI // 
-}
+        .add-list-button {
+            background-color: var(--accent-color); /* Use accent color for Add to List */
+        }
 
-function displayWatchHistory() {
-    const history = JSON.parse(localStorage.getItem('watchHistory')) || []; // 
-    const container = document.getElementById('watch-history-list'); // 
-    if (!container) return; // 
+        .add-list-button.added {
+            background-color: #4CAF50; /* Green for added state */
+        }
 
-    if (history.length === 0) {
-        container.innerHTML = '<p class="search-placeholder">No watch history yet.</p>'; // 
-        return; // 
-    }
+        .add-list-button:hover {
+            background-color: var(--accent-hover-color);
+            transform: scale(1.02);
+        }
+        .add-list-button.added:hover {
+            background-color: #45a049; /* Darker green for added hover */
+        }
 
-    container.innerHTML = history.map(item => `
-        <div class="movie-item" onclick="handleMovieClick(${JSON.stringify(item).replace(/"/g, '\'')})">
-            <img src="${item.poster_path ? IMG_URL + item.poster_path : 'https://via.placeholder.com/200x300?text=No+Image'}"
-                 alt="${item.title || item.name}" loading="lazy">
-            <div class="movie-overlay">
-                <div class="movie-title">${item.title || item.name}</div>
+        /* Your Rating & Review Section Styles */
+        .rating-review-section {
+            margin-top: var(--spacing-xl);
+            padding-top: var(--spacing-l);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .rating-review-section h3 {
+            font-size: 2rem;
+            color: var(--text-color);
+            margin-bottom: var(--spacing-m);
+        }
+
+        .stars {
+            display: flex;
+            gap: 5px;
+            margin-bottom: var(--spacing-m);
+        }
+
+        .stars .fa-star {
+            font-size: 1.8rem;
+            color: #555; /* Default star color */
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .stars .fa-star.checked,
+        .stars .fa-star:hover,
+        .stars .fa-star:hover ~ .fa-star {
+            color: var(--gold-rating); /* Gold color for checked/hovered stars */
+        }
+
+        .review-textarea {
+            width: 100%;
+            height: 120px;
+            padding: var(--spacing-s);
+            margin-bottom: var(--spacing-m);
+            border-radius: 5px;
+            border: 1px solid #555;
+            background-color: #333;
+            color: var(--text-color);
+            font-size: 1rem;
+            resize: vertical;
+        }
+
+        .submit-review-button {
+            background-color: var(--accent-color);
+            color: var(--text-color);
+            border: none;
+            padding: var(--spacing-s) var(--spacing-l);
+            font-size: 1.1rem;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .submit-review-button:hover {
+            background-color: var(--accent-hover-color);
+            transform: scale(1.02);
+        }
+
+        /* Styles for displayed reviews */
+        .reviews-display-area {
+            margin-top: var(--spacing-l);
+            padding-top: var(--spacing-m);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .review-item {
+            background-color: var(--primary-color);
+            padding: var(--spacing-m);
+            border-radius: 8px;
+            margin-bottom: var(--spacing-m);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            display: flex; /* Use flexbox for icon and content alignment */
+            align-items: flex-start; /* Align items to the top */
+            gap: var(--spacing-s); /* Space between icon and review content */
+        }
+
+        .review-item .user-icon {
+            font-size: 1.5rem; /* Size of the user icon */
+            color: #aaa; /* A subtle color for the icon */
+            flex-shrink: 0; /* Prevent icon from shrinking */
+            padding-top: 3px; /* Adjust vertical alignment with text */
+        }
+
+        .review-item .review-content {
+            flex-grow: 1; /* Allow review content to take available space */
+        }
+
+        .review-item .review-stars {
+            color: var(--gold-rating);
+            font-size: 1.2rem;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .review-item .review-text {
+            color: #ccc;
+            font-size: 1rem;
+            line-height: 1.5;
+            word-wrap: break-word; /* Ensure long words wrap */
+        }
+
+
+        /* Responsive adjustments */
+        @media (max-width: 1024px) {
+            .details-title {
+                font-size: 2.5rem;
+            }
+            .details-rating {
+                font-size: 1.3rem;
+            }
+            .details-overview {
+                font-size: 1rem;
+            }
+            .download-button {
+                font-size: 1rem;
+                padding: var(--spacing-s) var(--spacing-m);
+            }
+            .rating-review-section h3 {
+                font-size: 1.7rem;
+            }
+            .stars .fa-star {
+                font-size: 1.5rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .details-container {
+                margin: var(--spacing-m) auto;
+                padding: var(--spacing-m);
+                flex-direction: column;
+            }
+            .details-content {
+                flex-direction: column;
+                align-items: center;
+                gap: var(--spacing-m);
+            }
+            .details-poster {
+                width: 250px;
+            }
+            .details-title {
+                font-size: 2rem;
+                text-align: center;
+            }
+            .details-rating {
+                font-size: 1.2rem;
+                text-align: center;
+            }
+            .details-overview {
+                font-size: 0.95rem;
+                text-align: center;
+            }
+            .details-genres {
+                text-align: center;
+            }
+            .back-button {
+                top: 10px;
+                left: 10px;
+                width: 35px;
+                height: 35px;
+                font-size: 1.3rem;
+            }
+            body {
+                padding-top: 60px; /* Adjust for smaller header on mobile */
+            }
+            .download-button {
+                width: 80%; /* Make button wider on small screens */
+                max-width: 300px;
+                margin-left: auto;
+                margin-right: auto;
+                display: block; /* Make it a block element to center with margin: auto */
+            }
+            .download-button + .download-button {
+                margin-left: auto; /* Center second button too */
+                margin-top: var(--spacing-s); /* Add vertical space */
+            }
+            .rating-review-section h3 {
+                text-align: center;
+                font-size: 1.5rem;
+            }
+            .stars {
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .details-container {
+                padding: var(--spacing-s);
+            }
+            .details-poster {
+                width: 200px;
+            }
+            .details-title {
+                font-size: 1.8rem;
+            }
+            .details-rating {
+                font-size: 1rem;
+            }
+            .details-overview {
+                font-size: 0.9rem;
+            }
+            .details-genres span {
+                font-size: 0.8rem;
+                padding: 3px 8px;
+            }
+            .download-button {
+                font-size: 0.95rem;
+                padding: var(--spacing-s) var(--spacing-m);
+            }
+            .rating-review-section h3 {
+                font-size: 1.3rem;
+            }
+            .stars .fa-star {
+                font-size: 1.2rem;
+            }
+            .review-item {
+                flex-direction: column; /* Stack icon and text on very small screens */
+                align-items: center;
+                text-align: center;
+            }
+            .review-item .user-icon {
+                margin-bottom: var(--spacing-xs); /* Space below icon when stacked */
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-left">
+            <h1 class="logo"><a href="index.html" id="logo-link">HBMaxx</a></h1>
+            <nav>
+                <a href="index.html" id="home-link">Home</a>
+                <a href="index.html#my-list-section" id="my-list-link">My List</a>
+            </nav>
+        </div>
+        <div class="header-right">
+            <div class="search-box">
+                <button id="search-button-newpage"><i class="fas fa-search"></i></button>
             </div>
         </div>
-    `).join(''); // 
-}
+    </header>
+
+    <main>
+        <div class="details-container">
+            <button class="back-button" onclick="history.back();"><i class="fas fa-chevron-left"></i></button>
+            <div class="details-video-player">
+                <iframe id="details-video-iframe" frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowfullscreen></iframe>
+            </div>
+            <div class="details-content">
+                <img id="details-poster" class="details-poster" src="" alt="Poster">
+                <div class="details-info">
+                    <h2 id="details-title" class="details-title"></h2>
+                    <div id="details-rating" class="details-rating"></div>
+                    <p id="details-overview" class="details-overview"></p>
+                    <div id="details-genres" class="details-genres"></div>
+
+                    <button class="download-button" id="mediafire-download-button">
+                        <i class="fas fa-download"></i> MEDIAFIRE DOWNLOAD
+                    </button>
+                    <button id="add-to-list-button" class="download-button add-list-button"><i class="fas fa-plus"></i> Add to List</button>
+
+                </div>
+            </div>
+
+            <div class="rating-review-section">
+                <h3>Your Rating & Review</h3>
+                <div class="stars" id="star-rating">
+                    <i class="fas fa-star" data-value="1"></i>
+                    <i class="fas fa-star" data-value="2"></i>
+                    <i class="fas fa-star" data-value="3"></i>
+                    <i class="fas fa-star" data-value="4"></i>
+                    <i class="fas fa-star" data-value="5"></i>
+                </div>
+                <textarea id="review-text" class="review-textarea" placeholder="Write your review here..."></textarea>
+                <button id="submit-review-button" class="submit-review-button">Submit Review</button>
+
+                <div id="reviews-display-area" class="reviews-display-area">
+                    <h4>User Reviews</h4>
+                    </div>
+            </div>
+            </div>
+    </main>
+
+    <div id="footer">
+        <p>Disclaimer: This site is for educational and demonstration purposes only. No copyright infringement intended. All content is sourced from public APIs like TMDB and other open-source resources. We do not host any copyrighted material.</p>
+        <p>© 2025 HBMaxx. All rights reserved.</p>
+    </div>
+
+    <div id="search-modal" class="modal">
+        <div class="search-modal-content">
+            <span class="close-button" onclick="closeSearchModal()">&times;</span>
+            <input type="text" id="search-modal-input" placeholder="Search for movies or TV shows..." onkeyup="searchTMDB()">
+            <div id="search-results">
+                </div>
+        </div>
+    </div>
+
+    <iframe id="contentFrame"></iframe>
+    <script src="newpage.js"></script>
+    <script>
+        // JavaScript for star rating functionality and review submission
+        document.addEventListener('DOMContentLoaded', () => {
+            let currentRating = 0; // Moved currentRating to a higher scope within DOMContentLoaded
+
+            const starRating = document.getElementById('star-rating');
+            if (starRating) {
+                const stars = starRating.querySelectorAll('.fa-star');
+
+                stars.forEach(star => {
+                    star.addEventListener('click', () => {
+                        currentRating = parseInt(star.dataset.value);
+                        highlightStars(currentRating);
+                        console.log('User rated:', currentRating, 'stars');
+                    });
+
+                    star.addEventListener('mouseover', () => {
+                        highlightStars(parseInt(star.dataset.value), true);
+                    });
+
+                    star.addEventListener('mouseout', () => {
+                        highlightStars(currentRating); // Revert to current rating or no highlight if not rated
+                    });
+                });
+
+                function highlightStars(rating, isHover = false) {
+                    stars.forEach(star => {
+                        if (parseInt(star.dataset.value) <= rating) {
+                            star.classList.add('checked');
+                        } else {
+                            star.classList.remove('checked');
+                        }
+                    });
+                }
+            }
+
+            const submitReviewButton = document.getElementById('submit-review-button');
+            const reviewTextarea = document.getElementById('review-text');
+            const reviewsDisplayArea = document.getElementById('reviews-display-area'); // Get the new display area
+
+            if (submitReviewButton) {
+                submitReviewButton.addEventListener('click', () => {
+                    const review = reviewTextarea.value.trim();
+                    const rating = currentRating;
+
+                    if (rating === 0) {
+                        alert('Please select a star rating.');
+                        return;
+                    }
+
+                    if (review === '') {
+                        alert('Please write a review.');
+                        return;
+                    }
+
+                    // Create elements to display the review
+                    const reviewItem = document.createElement('div');
+                    reviewItem.classList.add('review-item');
+
+                    // Add User Icon
+                    const userIcon = document.createElement('i');
+                    userIcon.classList.add('fas', 'fa-user-circle', 'user-icon'); // Using Font Awesome user circle icon
+                    reviewItem.appendChild(userIcon);
+
+                    const reviewContent = document.createElement('div'); // Container for stars and text
+                    reviewContent.classList.add('review-content');
+
+                    const reviewStars = document.createElement('div');
+                    reviewStars.classList.add('review-stars');
+                    for (let i = 0; i < rating; i++) {
+                        const starIcon = document.createElement('i');
+                        starIcon.classList.add('fas', 'fa-star');
+                        reviewStars.appendChild(starIcon);
+                    }
+
+                    const reviewText = document.createElement('p');
+                    reviewText.classList.add('review-text');
+                    reviewText.textContent = review;
+
+                    reviewContent.appendChild(reviewStars);
+                    reviewContent.appendChild(reviewText);
+
+                    reviewItem.appendChild(reviewContent); // Append content container to review item
+
+                    // Append the new review to the display area
+                    reviewsDisplayArea.appendChild(reviewItem);
+
+                    console.log('Submitted Review:', { rating: rating, review: review });
+                    alert('Thanks for your review!');
+
+                    // Clear the fields and reset stars
+                    reviewTextarea.value = '';
+                    currentRating = 0;
+                    highlightStars(0); // Clear star highlights
+                });
+            }
+        });
+    </script>
+</body>
+</html>

@@ -312,7 +312,7 @@ function loadNextContent() {
 
 
 // --- RATING & REVIEW FEATURE CODE (NETLIFY API INTEGRATION) ---
-document.getElementById('star-rating-container');
+document.getElementById('star-rating');
 const reviewTextInput = document.getElementById('review-text');
 const submitReviewButton = document.getElementById('submit-review-button');
 const reviewsListContainer = document.getElementById('reviews-list');

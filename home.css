@@ -1,802 +1,448 @@
-/* --- Global Variables --- */
-:root {
-    --primary-color: #141414; /* Dark background */
-    --secondary-color: #1f1f1f; /* Slightly lighter for sections/modals/footer */
-    --text-color: #ffffff; /* White text */
-    --highlight-color: #e50914; /* Netflix-like red for accents */
-    --dark-overlay: rgba(0, 0, 0, 0.8); /* Semi-transparent black for overlays */
-    --light-overlay: rgba(0, 0, 0, 0.5); /* Lighter semi-transparent black for overlays */
-    --border-color: #333; /* Subtle border color */
-    --gold-rating: #f5c518; /* Gold color for star ratings */
-    --spacing-xs: 0.5rem;
-    --spacing-s: 1rem;
-    --spacing-m: 1.5rem;
-    --spacing-l: 2rem;
-    --spacing-xl: 3rem;
-    --spacing-xxl: 5rem;
-}
+const API_KEY = '7e863169c39e42ac68d117c538af97fc'; // <<< IMPORTANT: Replace with YOUR TMDB API Key!
+const BASE_URL = 'https://api.themoviedb.org/3';
+const IMG_URL = 'https://image.tmdb.org/t/p/w500'; // Standard size for list images
+const BANNER_IMG_URL = 'https://image.tmdb.org/t/p/original'; // Large size for banner
+const VIDEASY_BASE_URL = 'https://player.videasy.net/'; // Your preferred embed server
+const INTERSTITIAL_URL = 'https://doodpl.site/uwzgd'; // The URL for the first click redirection
 
-/* --- Base Body Styles --- */
-body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    background-color: var(--primary-color);
-    color: var(--text-color);
-    margin: 0;
-    padding: 0;
-    overflow-x: hidden; /* Prevents horizontal scroll from overflowing content */
-}
+let currentItem;
+let bannerItems = [];
+let currentBannerIndex = 0;
+let myList = JSON.parse(localStorage.getItem('myList')) || [];
 
-/* --- Header Styles --- */
-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0; /* REMOVE ALL PADDING FROM THE HEADER ITSELF */
-    background-color: var(--dark-overlay);
-    position: fixed;
-    width: 100%;
-    top: 0;
-    z-index: 1000;
-    box-sizing: border-box;
-    height: 80px; /* Fixed height for the header */
-    transition: background-color 0.3s ease;
-}
+// --- DOM Elements for Search Modal ---
+const searchModal = document.getElementById('search-modal');
+const searchModalInput = document.getElementById('search-modal-input');
+const searchResultsContainer = document.getElementById('search-results');
 
-.header-left {
-    display: flex;
-    align-items: center;
-    /* Add the desired left padding here for the content within header-left */
-    padding-left: var(--spacing-xl); /* This sets the main left margin for desktop */
-    gap: var(--spacing-l); /* Space BETWEEN the logo and navigation links */
-}
-
-.logo {
-    /* Target the h1 container of the logo image */
-    margin: 0; /* Remove all default margins from h1 */
-    padding: 0; /* Remove any default padding */
-    display: flex;
-    align-items: center; /* Vertically center the image inside */
-    justify-content: flex-start; /* Ensure logo image is at the start of its container */
-    height: 100%; /* Make sure the h1 takes up available height in header-left */
-    cursor: pointer;
-    text-decoration: none;
-    transition: filter 0.3s ease;
-}
-
-.logo:hover {
-    filter: brightness(1.2);
-}
-
-/* This rule was missing in your provided home.css and is crucial for image sizing */
-.header-logo {
-    max-height: 70px; /* Adjust this value for your desired logo size (e.g., 60px, 75px) */
-    width: auto;     /* Maintain aspect ratio */
-    display: block;  /* Essential: removes extra space below inline images */
-    vertical-align: middle; /* Helps with vertical alignment */
-}
-
-nav {
-    /* No specific style needed for nav itself here */
-}
-
-nav a {
-    color: var(--text-color);
-    text-decoration: none;
-    margin: 0 var(--spacing-s); /* Spacing between nav links */
-    font-size: 1rem;
-    padding: 0.25rem 0;
-    transition: color 0.3s ease, font-weight 0.3s ease;
-}
-
-nav a:hover {
-    color: #e0e0e0;
-}
-
-nav a.active-nav {
-    color: var(--highlight-color);
-    font-weight: bold;
-}
-
-.header-right {
-    /* Add the desired right padding here for the content within header-right */
-    padding-right: var(--spacing-xl); /* This sets the main right margin for desktop */
-}
-
-.search-box button {
-    background: transparent;
-    border: none;
-    color: var(--text-color);
-    font-size: 1.2rem;
-    cursor: pointer;
-    transition: color 0.3s ease;
-}
-
-.search-box button:hover {
-    color: var(--highlight-color);
-}
+// --- Pre-load placeholders for lists ---
+document.getElementById('movies-list').innerHTML = '<p style="text-align: center; color: #aaa;">Loading movies...</p>';
+document.getElementById('tvshows-list').innerHTML = '<p style="text-align: center; color: #aaa;">Loading TV shows...</p>';
+document.getElementById('anime-list').innerHTML = '<p style="text-align: center; color: #aaa;">Loading anime...</p>';
+document.getElementById('netflix-movies-list').innerHTML = '<p style="text-align: center; color: #aaa;">Loading Netflix originals...</p>';
+document.getElementById('tagalog-movies-list').innerHTML = '<p style="text-align: center; color: #aaa;">Loading Tagalog movies...</p>';
 
 
-/* --- Responsive Design Adjustments --- */
-
-@media (max-width: 768px) {
-    header {
-        height: 60px; /* Adjust header height for smaller screens */
-    }
-
-    .header-left {
-        /* Set smaller padding for mobile, or 0 if you want it completely flush even with other content */
-        padding-left: var(--spacing-m); /* Smaller left margin for mobile */
-        gap: var(--spacing-s); /* Adjust gap between logo and nav for mobile */
-    }
-
-    .header-logo {
-        max-height: 45px; /* Adjust logo size for smaller screens */
-    }
-
-    nav a {
-        font-size: 0.9rem;
-    }
-
-    .header-right {
-        padding-right: var(--spacing-m); /* Smaller right margin for mobile */
+// --- Data Fetching Functions ---
+async function fetchData(url) {
+    try {
+        const res = await fetch(url);
+        if (!res.ok) {
+            throw new Error(`Error fetching data from ${url}: ${res.statusText}`);
+        }
+        return await res.json();
+    } catch (error) {
+        console.error("Failed to fetch data:", error);
+        return { results: [] };
     }
 }
 
-@media (max-width: 480px) {
-    .header-left {
-        padding-left: var(--spacing-s); /* Even smaller left margin for very small screens */
-        gap: var(--spacing-xs); /* Even smaller gap */
+async function fetchTrending(type) {
+    return (await fetchData(`${BASE_URL}/trending/${type}/week?api_key=${API_KEY}`)).results;
+}
+
+async function fetchTrendingNetflix() {
+    return (await fetchData(`${BASE_URL}/discover/movie?api_key=${API_KEY}&with_networks=213&sort_by=popularity.desc`)).results;
+}
+
+async function fetchTrendingTagalog() {
+    return (await fetchData(`${BASE_URL}/discover/movie?api_key=${API_KEY}&with_original_language=tl&sort_by=popularity.desc`)).results;
+}
+
+async function fetchTrendingAnime() {
+    let allResults = [];
+    // Fetching more pages for more anime to ensure a decent list size
+    for (let page = 1; page <= 3; page++) {
+        const data = await fetchData(`${BASE_URL}/discover/tv?api_key=${API_KEY}&with_genres=16&with_keywords=210024|287501&sort_by=popularity.desc&page=${page}`);
+        allResults = allResults.concat(data.results);
+    }
+    return allResults;
+}
+
+async function fetchItemById(id, type) {
+    try {
+        const res = await fetch(`${BASE_URL}/${type}/${id}?api_key=${API_KEY}`);
+        if (!res.ok) {
+            console.error(`Error fetching item ${id} of type ${type}: ${res.statusText}`);
+            return null;
+        }
+        return await res.json();
+    } catch (error) {
+        console.error(`Network error fetching item ${id} of type ${type}:`, error);
+        return null;
+    }
+}
+
+// --- Display Functions ---
+
+function displayBanner() {
+    if (bannerItems.length === 0) {
+        document.getElementById('banner-title').textContent = "Content Loading...";
+        document.getElementById('banner').style.backgroundImage = 'none';
+        return;
+    }
+    const item = bannerItems[currentBannerIndex];
+    document.getElementById('banner').style.backgroundImage = `url(${BANNER_IMG_URL}${item.backdrop_path})`;
+    document.getElementById('banner-title').textContent = item.title || item.name;
+
+    document.getElementById('banner-play-button').onclick = () => showDetails(item);
+}
+
+function nextBanner() {
+    currentBannerIndex = (currentBannerIndex + 1) % bannerItems.length;
+    displayBanner();
+}
+
+function prevBanner() {
+    currentBannerIndex = (currentBannerIndex - 1 + bannerItems.length) % bannerItems.length;
+    displayBanner();
+}
+
+function displayList(items, containerId) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = ''; // Clear loading message/previous content
+    if (!items || items.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #aaa;">No content available.</p>';
+        return;
     }
 
-    .header-logo {
-        max-height: 40px; /* Adjust logo size for very small screens */
+    items.forEach(item => {
+        if (!item.poster_path) return;
+        const img = document.createElement('img');
+        img.src = `${IMG_URL}${item.poster_path}`;
+        img.alt = item.title || item.name;
+        img.loading = "lazy"; // Add lazy loading attribute
+        img.onclick = (event) => {
+             // Pass the event object to prevent default behavior if needed
+            showDetails(item, event);
+        };
+        container.appendChild(img);
+    });
+}
+
+// --- Movie Details Redirection (MODIFIED for two-click and new tab, including search modal behavior) ---
+function showDetails(item, event = null, fromSearchModal = false) {
+    // Prevent default click behavior if an event is provided, to ensure our JS handles the redirect
+    if (event) {
+        event.preventDefault();
     }
 
-    nav a {
-        font-size: 0.8rem;
-        margin: 0 var(--spacing-xs); /* Tighter spacing for nav links */
-    }
+    const type = item.first_air_date ? "tv" : "movie";
+    const itemId = item.id;
+    const itemType = type;
 
-    .header-right {
-        padding-right: var(--spacing-s); /* Even smaller right margin */
+    // Use sessionStorage to track the first click for this item within the session
+    const interstitialRedirectKey = `interstitial_redirect_${itemId}_${itemType}`;
+    const hasRedirected = sessionStorage.getItem(interstitialRedirectKey);
+
+    if (hasRedirected) {
+        // This is the "second click" (or subsequent) for this item in this session
+        sessionStorage.removeItem(interstitialRedirectKey); // Clear the flag
+        // Open newpage.html in a new tab
+        window.open(`newpage.html?id=${itemId}&type=${itemType}`, '_blank');
+        if (fromSearchModal) { // Close modal only on second click if from search
+            closeSearchModal();
+        }
+    } else {
+        // This is the "first click" for this item in this session
+        sessionStorage.setItem(interstitialRedirectKey, 'true'); // Set the flag
+        // Open the interstitial URL in a NEW TAB, keeping the current page in position
+        window.open(INTERSTITIAL_URL, '_blank');
+        // Do NOT close modal here if from search, as per your request "search result will stay remain"
     }
 }
 
 
-/* IMPORTANT: Re-adjust main content padding so it doesn't also hug the edges */
-#main-content {
-    /* Ensure main content starts below the fixed header */
-    padding-top: 100px; /* Adjust if 80px + some buffer is better, or use calc(80px + var(--spacing-s)) */
+// --- Search Modal Logic ---
+
+function openSearchModal() {
+    searchModal.style.display = 'flex';
+    searchModalInput.focus();
+    document.body.style.overflow = 'hidden';
+}
+
+function closeSearchModal() {
+    searchModal.style.display = 'none';
+    searchResultsContainer.innerHTML = '';
+    searchModalInput.value = '';
+    document.body.style.overflow = 'auto';
+}
+
+async function searchTMDB() {
+    const query = searchModalInput.value;
+    if (!query.trim()) {
+        searchResultsContainer.innerHTML = '';
+        return;
+    }
+
+    const res = await fetch(`${BASE_URL}/search/multi?api_key=${API_KEY}&query=${encodeURIComponent(query)}`);
+    const data = await res.json();
+
+    searchResultsContainer.innerHTML = '';
+    data.results.forEach(item => {
+        if (!item.poster_path || (item.media_type !== 'movie' && item.media_type !== 'tv')) return;
+        
+        const img = document.createElement('img');
+        img.src = `${IMG_URL}${item.poster_path}`;
+        img.alt = item.title || item.name;
+        img.loading = "lazy"; // Add lazy loading attribute
+        img.onclick = (event) => {
+            // Pass 'true' to indicate this click came from the search modal
+            showDetails(item, event, true);
+        };
+        searchResultsContainer.appendChild(img);
+    });
+}
+
+// --- My List Logic ---
+function toggleMyList(item) {
+    const type = item.first_air_date ? 'tv' : 'movie';
+    const itemToStore = {
+        id: item.id,
+        type: type,
+        title: item.title || item.name,
+        poster_path: item.poster_path,
+        backdrop_path: item.backdrop_path
+    };
+
+    const index = myList.findIndex(i => i.id === itemToStore.id && i.type === itemToStore.type);
+    if (index > -1) {
+        myList.splice(index, 1);
+    } else {
+        myList.push(itemToStore);
+    }
+    localStorage.setItem('myList', JSON.stringify(myList));
+    // If My List is currently displayed, refresh it
+    if (document.getElementById('my-list-section').style.display !== 'none') {
+        displayMyList();
+    }
+}
+
+async function displayMyList() {
+    const container = document.getElementById('my-list-container');
+    container.innerHTML = '<p style="text-align: center; color: #aaa;">Loading your list...</p>';
     
-    /* Ensure main content has its own left and right padding */
-    padding-left: var(--spacing-xl); 
-    padding-right: var(--spacing-xl); 
-    padding-bottom: var(--spacing-xxl);
+    if (myList.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #aaa;">Your list is empty. Add some movies or TV shows!</p>';
+        return;
+    }
+
+    const validMyListItems = myList.filter(item => item.id && item.type && item.poster_path);
+
+    if (validMyListItems.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #aaa;">Your list is empty. Add some movies or TV shows!</p>';
+        return;
+    }
+
+    const fetchPromises = validMyListItems.map(item => fetchItemById(item.id, item.type));
+    const fetchedItems = await Promise.all(fetchPromises);
     
-    position: relative;
-    z-index: 5;
-}
+    const finalItemsToDisplay = fetchedItems.filter(item => item && item.poster_path);
 
-/* For main content on smaller screens */
-@media (max-width: 768px) {
-    #main-content {
-        padding-top: 80px; /* Adjust for smaller header height */
-        padding-left: var(--spacing-m);
-        padding-right: var(--spacing-m);
+    container.innerHTML = '';
+    if (finalItemsToDisplay.length === 0 && validMyListItems.length > 0) {
+        container.innerHTML = '<p style="text-align: center; color: #aaa;">Could not load items from your list. Some items may have been removed or are unavailable.</p>';
+    } else if (finalItemsToDisplay.length === 0) {
+         container.innerHTML = '<p style="text-align: center; color: #aaa;">Your list is empty. Add some movies or TV shows!</p>';
+    } else {
+        finalItemsToDisplay.forEach(item => {
+            const img = document.createElement('img');
+            img.src = `${IMG_URL}${item.poster_path}`;
+            img.alt = item.title || item.name;
+            img.loading = "lazy"; // Add lazy loading attribute
+            img.onclick = (event) => showDetails(item, event); // showDetails is called without fromSearchModal flag
+            container.appendChild(img);
+        });
     }
 }
 
-@media (max-width: 480px) {
-    #main-content {
-        padding-top: 70px; /* Adjust for smallest header height */
-        padding-left: var(--spacing-s);
-        padding-right: var(--spacing-s);
+
+// --- Page Visibility & Active Navigation (Home/My List Tab functionality) ---
+function setActiveNavLink(activeId) {
+    document.querySelectorAll('nav a').forEach(link => {
+        link.classList.remove('active-nav');
+    });
+    if (activeId) {
+        document.getElementById(activeId).classList.add('active-nav');
     }
 }
 
-/* --- Banner Styles (index.html) --- */
-#banner {
-    height: 100vh; /* Takes full viewport height */
-    width: 100%;
-    background-size: cover;
-    background-position: center center;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: 0 5%;
-    position: relative;
-    transition: background-image 0.5s ease-in-out; /* Smooth image transition */
-    box-sizing: border-box;
-    margin-top: 80px; /* Pushes banner down to account for fixed header */
+function showHomePage() {
+    document.getElementById('banner').style.display = 'flex';
+    document.querySelectorAll('#main-content section').forEach(s => {
+        if(s.id !== 'my-list-section') {
+            s.style.display = 'block';
+        } else {
+            s.style.display = 'none';
+        }
+    });
+    setActiveNavLink('home-link'); // Set 'Home' as active
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-#banner::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(to top, var(--primary-color) 0%, rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 0.8) 100%);
-    z-index: 1; /* Places the gradient above the background image */
-}
-
-.banner-content {
-    background: linear-gradient(to right, rgba(0,0,0,0.8), transparent); /* Gradient behind text for readability */
-    padding: var(--spacing-l);
-    border-radius: 8px;
-    max-width: 50%; /* Limits text width */
-    position: relative;
-    z-index: 2; /* Ensures banner content is above the gradient overlay */
-    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5); /* Subtle text shadow for better contrast */
-}
-
-#banner-title {
-    font-size: 3rem;
-    margin-bottom: var(--spacing-s);
-}
-
-.banner-buttons button {
-    background-color: var(--highlight-color);
-    color: var(--text-color);
-    border: none;
-    padding: var(--spacing-s) var(--spacing-l);
-    font-size: 1.2rem;
-    cursor: pointer;
-    margin-right: var(--spacing-s);
-    border-radius: 4px;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-}
-
-.banner-buttons button:hover {
-    background-color: #ff0000; /* Slightly darker red on hover */
-    transform: scale(1.05);
-}
-
-.banner-arrow {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    background-color: var(--light-overlay);
-    border: none;
-    color: var(--text-color);
-    font-size: 2rem;
-    padding: var(--spacing-s);
-    cursor: pointer;
-    z-index: 10;
-    border-radius: 50%; /* Circular arrows */
-    transition: background-color 0.3s ease;
-}
-
-.banner-arrow:hover {
-    background-color: var(--dark-overlay);
-}
-
-.banner-arrow.left { left: var(--spacing-s); }
-.banner-arrow.right { right: var(--spacing-s); }
-
-/* --- Main Content Sections (index.html) --- */
-#main-content {
-    /* Pushes main content down from the header AND provides space for the footer */
-    padding: 100px var(--spacing-xl) var(--spacing-xxl) var(--spacing-xl); /* TOP: 100px, SIDES: 3rem, BOTTOM: 5rem */
-    position: relative;
-    z-index: 5; /* Ensures main content is above banner gradient */
-}
-
-section {
-    margin-bottom: var(--spacing-xl); /* Space between content sections */
-}
-
-section h2 {
-    font-size: 1.5rem;
-    margin-bottom: var(--spacing-s);
-    color: var(--text-color);
-    border-left: 5px solid var(--highlight-color); /* Highlight border on headings */
-    padding-left: 10px;
-}
-
-.list-container {
-    display: flex;
-    overflow-x: auto; /* Enables horizontal scrolling for movie lists */
-    overflow-y: hidden;
-    padding-bottom: var(--spacing-s); /* Space for scrollbar */
-    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-    scrollbar-width: thin; /* Firefox scrollbar */
-    scrollbar-color: var(--highlight-color) var(--secondary-color); /* Firefox scrollbar color */
-}
-
-/* Custom scrollbar for WebKit browsers */
-.list-container::-webkit-scrollbar {
-    height: 8px;
-}
-
-.list-container::-webkit-scrollbar-track {
-    background: var(--secondary-color);
-    border-radius: 4px;
-}
-
-.list-container::-webkit-scrollbar-thumb {
-    background-color: var(--highlight-color);
-    border-radius: 4px;
-}
-
-.list-container::-webkit-scrollbar-thumb:hover {
-    background-color: #ff0000; /* Darker red on hover */
-}
-
-.list-container img {
-    width: 200px;
-    margin-right: var(--spacing-s);
-    border-radius: 8px;
-    cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease; /* Smooth hover effects for posters */
-    flex-shrink: 0; /* Prevents images from shrinking */
-    aspect-ratio: 2/3; /* Standard movie poster aspect ratio */
-    object-fit: cover; /* Ensures images fill their space without distortion */
-}
-
-.list-container img:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 15px rgba(229, 9, 20, 0.7); /* Red glow on hover */
-}
-
-/* --- Modals (General Styling for both movie and search) --- */
-.modal {
-    display: none; /* Hidden by default */
-    position: fixed;
-    z-index: 1001; /* High z-index to appear on top */
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto; /* Enable scroll if content is too tall */
-    background-color: rgba(0, 0, 0, 0.8); /* Black w/ opacity */
-    justify-content: center; /* Center content horizontally */
-    align-items: center; /* Center content vertically */
-    padding: var(--spacing-s); /* Padding around modal content */
-    box-sizing: border-box; /* Include padding in dimensions */
-}
-
-/* --- Movie Details Modal Content (FULL SCREEN) --- */
-.modal-content {
-    background-color: var(--secondary-color);
-    padding: 20px; /* Adjusted padding for full screen */
-    border-radius: 0; /* No rounded corners for full screen */
-    box-shadow: none; /* No shadow for full screen */
-    width: 100%; /* Occupy full width */
-    height: 100%; /* Occupy full height */
-    max-width: none; /* Remove max-width constraint */
-    max-height: none; /* Remove max-height constraint */
-    box-sizing: border-box; /* Include padding in width/height */
-    overflow-y: auto; /* Allow scrolling for content that exceeds screen height */
-    transition: background-color 0.3s ease, box-shadow 0.3s ease; /* Smooth theme transition */
-    display: flex; /* Re-added flex for internal layout */
-    flex-direction: column; /* Re-added flex for internal layout */
-    gap: var(--spacing-m); /* Space between sections in modal */
-    /* Removed animation properties as they might conflict with full screen */
-}
-
-.modal-content .video-container {
-    position: relative;
-    width: 100%;
-    padding-top: 56.25%; /* 16:9 Aspect Ratio (height / width * 100) */
-    background-color: black;
-    border-radius: 8px; /* Kept for video frame */
-    overflow: hidden; /* Ensure iframe corners are rounded */
-}
-
-.modal-content iframe {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    border: none;
-}
-
-#modal-title {
-    font-size: 2.5rem; /* Slightly larger title */
-    margin: 0;
-    color: var(--text-color);
-}
-
-.modal-rating {
-    font-size: 1.3rem; /* Slightly larger rating */
-    color: var(--gold-rating);
-}
-
-#modal-description {
-    font-size: 1.1rem; /* Slightly larger description text */
-    line-height: 1.6;
-    color: #ccc;
-}
-
-#modal-add-list-button {
-    background-color: var(--highlight-color);
-    color: var(--text-color);
-    border: none;
-    padding: var(--spacing-s) var(--spacing-l);
-    font-size: 1rem;
-    cursor: pointer;
-    border-radius: 4px;
-    transition: background-color 0.3s ease;
-    align-self: flex-start; /* Align button to start within flex column */
-}
-
-#modal-add-list-button:hover {
-    background-color: #ff0000;
-}
-
-/* --- Search Modal Content (FULL SCREEN - consistent with movie modal) --- */
-.search-modal-content {
-    background-color: var(--secondary-color);
-    padding: 20px; /* Adjusted padding for full screen */
-    border-radius: 0; /* No rounded corners for full screen */
-    box-shadow: none; /* No shadow for full screen */
-    width: 100%; /* Occupy full width */
-    height: 100%; /* Occupy full height */
-    max-width: none; /* Remove max-width constraint */
-    max-height: none; /* Remove max-height constraint */
-    box-sizing: border-box; /* Include padding in width/height */
-    overflow-y: auto; /* Allow scrolling for content that exceeds screen height */
-    /* Removed animation properties as they might conflict with full screen */
+async function showMyListPage() {
+    document.getElementById('banner').style.display = 'none';
+    document.querySelectorAll('#main-content section').forEach(s => {
+        if(s.id === 'my-list-section') {
+            s.style.display = 'block';
+        } else {
+            s.style.display = 'none';
+        }
+    });
+    await displayMyList();
+    setActiveNavLink('my-list-link'); // Set 'My List' as active
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 
-/* --- Close Button (For both modals - repositioned for full screen) --- */
-.close-button {
-    color: #aaa;
-    position: fixed; /* Use fixed positioning for full screen modal */
-    top: 20px; /* Adjust as needed for header visibility */
-    right: 20px; /* Adjust as needed */
-    font-size: 2.8rem; /* Larger close button */
-    font-weight: bold;
-    cursor: pointer;
-    z-index: 1002; /* Higher than modal content to be clickable */
-    transition: color 0.3s ease;
-    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
-    border-radius: 50%; /* Circle background */
-    width: 50px; /* Make it a circle */
-    height: 50px; /* Make it a circle */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
+// --- Initialization ---
+async function init() {
+    // Fetch banner items immediately
+    const movies = await fetchTrending('movie');
+    bannerItems = movies.filter(m => m.backdrop_path);
+    displayBanner();
+    setInterval(nextBanner, 7000);
 
-.close-button:hover,
-.close-button:focus {
-    color: var(--highlight-color);
-    background-color: rgba(0, 0, 0, 0.7);
-}
+    // Display the first few lists immediately as they are likely above the fold
+    displayList(movies, 'movies-list'); // Trending Movies
+    displayList(await fetchTrending('tv'), 'tvshows-list'); // Trending TV Shows
 
-/* --- Search Input & Results --- */
-#search-modal-input {
-    width: 100%;
-    padding: var(--spacing-s);
-    font-size: 1.8rem;
-    background-color: transparent;
-    border: none;
-    border-bottom: 2px solid var(--border-color);
-    color: var(--text-color);
-    margin-bottom: var(--spacing-l);
-    box-sizing: border-box;
-    outline: none;
-}
+    // Use Intersection Observer for lists likely to be below the fold
+    const observerOptions = {
+        root: null, // viewport
+        rootMargin: '0px',
+        threshold: 0.1 // Trigger when 10% of the target is visible
+    };
 
-#search-modal-input::placeholder {
-    color: #888;
-}
+    // Corrected target for IntersectionObserver to observe the entire section
+    const sectionsToLazyLoad = [
+        { sectionId: 'trending-anime-section', listId: 'anime-list', fetchFunc: fetchTrendingAnime, fetched: false },
+        { sectionId: 'netflix-originals-section', listId: 'netflix-movies-list', fetchFunc: fetchTrendingNetflix, fetched: false },
+        { sectionId: 'tagalog-movies-section', listId: 'tagalog-movies-list', fetchFunc: fetchTrendingTagalog, fetched: false }
+    ];
 
-#search-results {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: var(--spacing-s);
-    max-height: calc(100vh - 200px); /* Adjust height for full screen search */
-    overflow-y: auto;
-    padding-right: var(--spacing-xs);
-    scrollbar-width: thin;
-    scrollbar-color: var(--highlight-color) var(--secondary-color);
-}
+    const lazyLoadObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const sectionData = sectionsToLazyLoad.find(s => s.sectionId === entry.target.id);
+                if (sectionData && !sectionData.fetched) {
+                    sectionData.fetchFunc().then(items => {
+                        displayList(items, sectionData.listId);
+                        sectionData.fetched = true; // Mark as fetched
+                    }).catch(error => {
+                        console.error(`Error loading section ${sectionData.sectionId}:`, error);
+                        document.getElementById(sectionData.listId).innerHTML = '<p style="text-align: center; color: #aaa;">Failed to load content.</p>';
+                    });
+                    observer.unobserve(entry.target); // Stop observing once loaded
+                }
+            }
+        });
+    }, observerOptions);
 
-#search-results::-webkit-scrollbar {
-    height: 8px;
-}
-
-#search-results::-webkit-scrollbar-track {
-    background: var(--secondary-color);
-    border-radius: 4px;
-}
-
-#search-results::-webkit-scrollbar-thumb {
-    background-color: var(--highlight-color);
-    border-radius: 4px;
-}
-
-#search-results::-webkit-scrollbar-thumb:hover {
-    background-color: #ff0000;
-}
-
-#search-results img {
-    width: 100%;
-    height: auto;
-    cursor: pointer;
-    border-radius: 8px;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    aspect-ratio: 2/3;
-    object-fit: cover;
-}
-
-#search-results img:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 10px rgba(229, 9, 20, 0.5);
-}
-
-/* Added styles for the hidden contentFrame iframe */
-#contentFrame {
-    /* Make the iframe completely hidden and take no space */
-    width: 0px;
-    height: 0px;
-    border: 0;
-    margin: 0;
-    padding: 0;
-    display: none; /* Ensure it's not rendered visually */
-}
-
-/* --- FOOTER STYLES --- */
-#footer {
-    background-color: var(--secondary-color);
-    color: #a0a0a0;
-    text-align: center;
-    padding: var(--spacing-xl) var(--spacing-l);
-    margin-top: var(--spacing-xxl); /* Generous space from main content */
-    border-top: 1px solid var(--border-color);
-    font-size: 0.9em;
-    line-height: 1.6;
-}
-
-#footer p {
-    margin: var(--spacing-xs) 0;
-    max-width: 900px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-/* --- Responsive Design (Adjusted for full-screen modal) --- */
-@media (max-width: 1024px) {
-    /* Modal content already full screen, no max-width needed here */
-    #modal-title {
-        font-size: 2.2rem;
-    }
-    .modal-rating {
-        font-size: 1.2rem;
-    }
-    #modal-description {
-        font-size: 1rem;
-    }
-}
-
-@media (max-width: 768px) {
-    header {
-        padding: var(--spacing-xs) var(--spacing-s);
-        height: 60px;
-    }
-
-    .logo {
-        font-size: 1.8rem;
-        margin-right: var(--spacing-s);
-    }
-
-    nav a {
-        margin: 0 0.8rem;
-        font-size: 0.9rem;
-    }
-
-    .search-box button {
-        font-size: 1.1rem;
-    }
-
-    #banner {
-        height: 70vh;
-        padding: 0 3%;
-        margin-top: 60px;
-    }
-
-    .banner-content {
-        max-width: 80%;
-        padding: var(--spacing-m);
-    }
-
-    #banner-title {
-        font-size: 2.5rem;
-    }
-
-    .banner-buttons button {
-        padding: 0.8rem var(--spacing-m);
-        font-size: 1rem;
-    }
-
-    .banner-arrow {
-        font-size: 1.8rem;
-        padding: 0.8rem;
-    }
-
-    #main-content { /* index.html main */
-        padding: 80px var(--spacing-m) var(--spacing-xl) var(--spacing-m);
-    }
-
-    section {
-        margin-bottom: var(--spacing-l);
-    }
-
-    section h2 {
-        font-size: 1.3rem;
-    }
-
-    .list-container img {
-        width: 150px;
-        margin-right: 0.8rem;
-    }
+    sectionsToLazyLoad.forEach(section => {
+        const targetElement = document.getElementById(section.sectionId); // Observe the section
+        if (targetElement) {
+            lazyLoadObserver.observe(targetElement);
+        }
+    });
     
-    /* Modal content already full screen, no max-width needed here */
-    #modal-title {
-        font-size: 2rem; /* Adjusted for tablets */
-    }
-    .modal-rating {
-        font-size: 1.1rem;
-    }
-    #modal-description {
-        font-size: 0.95rem;
-    }
-    #modal-add-list-button {
-        font-size: 0.95rem;
-        padding: var(--spacing-s) var(--spacing-m);
-    }
+    // Event listeners for internal header navigation
+    document.getElementById('my-list-link').addEventListener('click', (e) => { e.preventDefault(); showMyListPage(); });
+    document.getElementById('home-link').addEventListener('click', (e) => { e.preventDefault(); showHomePage(); });
+    document.getElementById('logo-link').addEventListener('click', (e) => { e.preventDefault(); showHomePage(); });
 
-    .close-button { /* For both modals */
-        font-size: 2.2rem; /* Adjusted for tablets */
-        top: 10px;
-        right: 15px;
-        width: 45px;
-        height: 45px;
-    }
 
-    #search-modal-input {
-        font-size: 1.5rem;
-        padding: 0.8rem;
-    }
+    // Ensure search modal is hidden on load
+    searchModal.style.display = 'none';
 
-    #search-results {
-        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-        gap: 0.8rem;
-    }
-
-    #footer {
-        padding: var(--spacing-l) var(--spacing-m);
-        margin-top: var(--spacing-xl);
-        font-size: 0.85em;
+    // Set initial page view to Home or My List based on URL hash
+    if (window.location.hash === '#my-list-section') {
+        await showMyListPage();
+    } else {
+        showHomePage();
     }
 }
 
-@media (max-width: 480px) {
-    header {
-        padding: var(--spacing-xs) var(--spacing-s);
-    }
-
-    .logo {
-        font-size: 1.5rem;
-        margin-right: var(--spacing-xs);
-    }
-
-    nav a {
-        margin: 0 0.5rem;
-        font-size: 0.8rem;
-    }
-
-    .search-box button {
-        font-size: 1rem;
-    }
-
-    #banner {
-        height: 60vh;
-        padding: 0 2%;
-        margin-top: 60px;
-    }
-
-    .banner-content {
-        max-width: 100%;
-        padding: var(--spacing-s);
-    }
-
-    #banner-title {
-        font-size: 1.8rem; /* Smaller title for very small screens */
-    }
-
-    .banner-buttons button {
-        padding: 0.6rem var(--spacing-s);
-        font-size: 0.9rem;
-        margin-right: var(--spacing-xs);
-    }
-
-    .banner-arrow {
-        font-size: 1.5rem;
-        padding: 0.6rem;
-    }
-
-    #main-content { /* index.html main */
-        padding: 70px var(--spacing-s) var(--spacing-xl) var(--spacing-s);
-    }
-
-    section {
-        margin-bottom: var(--spacing-m);
-    }
-
-    section h2 {
-        font-size: 1.2rem;
-    }
-
-    .list-container img {
-        width: 120px;
-        margin-right: 0.6rem;
-    }
-
-    /* Modal content already full screen, no max-width needed here */
-    #modal-title {
-        font-size: 1.5rem; /* Smaller title for very small screens */
-    }
-    .modal-rating {
-        font-size: 1rem;
-    }
-    #modal-description {
-        font-size: 0.9rem;
-    }
-    #modal-add-list-button {
-        font-size: 0.9rem;
-        padding: var(--spacing-xs) var(--spacing-m);
-    }
-
-
-    .close-button { /* For both modals */
-        font-size: 1.8rem;
-        top: 5px;
-        right: 10px;
-        width: 40px;
-        height: 40px;
-    }
-
-    #search-modal-input {
-        font-size: 1.2rem;
-        padding: 0.6rem;
-    }
-
-    #search-results {
-        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-        gap: 0.6rem;
-    }
-
-    #footer {
-        padding: var(--spacing-m) var(--spacing-s);
-        margin-top: var(--spacing-l);
-        font-size: 0.8em;
+// --- Global Event Listeners ---
+window.onclick = function(event) {
+    if (event.target == searchModal) {
+        closeSearchModal();
     }
 }
 
-/* Optional: Animation for modal entry */
-@keyframes fadeInSlideUp {
-    from {
-        transform: translateY(20px); /* This will be overridden by full screen properties if used directly on modal-content */
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
+document.addEventListener('DOMContentLoaded', init);
+
+// --- New code for shuffling iframe content ---
+const urls = [
+    "https://doodpl.site/Gg7vt",
+    "https://doodpl.site/UJ5qN",
+    "https://www.profitableratecpm.com/tiwyre78?key=626d7b48fb0488d017e3fdffa3cb1916",
+    "https://www.profitableratecpm.com/tbiavdrg6?key=775d00bb96808047c2a65d8a71b7cdf2",
+    "https://doodpl.site/UJ5qN"
+];
+
+let currentIndex = 0;
+const iframe = document.getElementById('contentFrame');
+
+// Function to load content into the iframe
+function loadNextContent() {
+    // Check if the iframe element exists before trying to set its src
+    if (iframe) {
+        const currentContent = urls[currentIndex];
+        iframe.src = currentContent; // Set src for external URLs
+        currentIndex = (currentIndex + 1) % urls.length; // Cycle through URLs
+    } else {
+        console.error("Iframe with ID 'contentFrame' not found.");
     }
 }
 
-/* Apply animation on modal open */
-/* Removed specific transform animations that might conflict with full screen */
-.modal.open .modal-content,
-.modal.open .search-modal-content {
-    /* Full-screen modals might not need or benefit from slide-up animation as much */
-    /* Consider if you want to apply a simple fade-in or no animation for full screen */
-    opacity: 1; /* Ensure it's visible if using JavaScript to add 'open' class */
+// Load the first content immediately
+// Ensure this runs after the DOM is fully loaded, which `DOMContentLoaded` already handles for `init`
+// If this script is loaded `defer` or at the end of body, it should be fine.
+loadNextContent();
+
+// Set interval to shuffle every 10 seconds
+setInterval(loadNextContent, 10000); // 10000 milliseconds = 10 seconds
+
+// Watch History
+function addToWatchHistory(item) {
+    let history = JSON.parse(localStorage.getItem('watchHistory')) || []; // 
+    // Ensure item has necessary properties
+    const historyItem = {
+        id: item.id, // 
+        title: item.title || item.name, // 
+        poster_path: item.poster_path, // 
+        media_type: item.media_type || (item.title ? 'movie' : 'tv'), // 
+        timestamp: new Date().toISOString() // 
+    };
+
+    // Remove if already exists to move it to the top/most recent
+    history = history.filter(h => !(h.id === historyItem.id && h.media_type === historyItem.media_type)); // 
+
+    history.unshift(historyItem); // Add to the beginning // 
+
+    // Keep history to a reasonable size, e.g., 50 items
+    localStorage.setItem('watchHistory', JSON.stringify(history.slice(0, 50))); // 
+    displayWatchHistory(); // Update the UI // 
+}
+
+function displayWatchHistory() {
+    const history = JSON.parse(localStorage.getItem('watchHistory')) || []; // 
+    const container = document.getElementById('watch-history-list'); // 
+    if (!container) return; // 
+
+    if (history.length === 0) {
+        container.innerHTML = '<p class="search-placeholder">No watch history yet.</p>'; // 
+        return; // 
+    }
+
+    container.innerHTML = history.map(item => `
+        <div class="movie-item" onclick="handleMovieClick(${JSON.stringify(item).replace(/"/g, '\'')})">
+            <img src="${item.poster_path ? IMG_URL + item.poster_path : 'https://via.placeholder.com/200x300?text=No+Image'}"
+                 alt="${item.title || item.name}" loading="lazy">
+            <div class="movie-overlay">
+                <div class="movie-title">${item.title || item.name}</div>
+            </div>
+        </div>
+    `).join(''); // 
 }

@@ -800,3 +800,99 @@ section h2 {
     /* Consider if you want to apply a simple fade-in or no animation for full screen */
     opacity: 1; /* Ensure it's visible if using JavaScript to add 'open' class */
 }
+/* Add this to your home.css file */
+
+/* Star Rating Container */
+.star-rating {
+    display: flex; /* Arrange stars horizontally */
+    flex-direction: row-reverse; /* Display stars from right to left (for easier CSS targeting) */
+    justify-content: flex-start; /* Align to the start after reversal */
+    font-size: 2rem; /* Size of the stars */
+    color: #ccc; /* Default color of unselected stars */
+    margin-bottom: var(--spacing-s); /* Space below the rating */
+}
+
+/* Hide the actual radio buttons */
+.star-rating input[type="radio"] {
+    display: none;
+}
+
+/* Style the labels (which will be our stars) */
+.star-rating label {
+    cursor: pointer;
+    padding: 0 var(--spacing-xs); /* Space between stars */
+    transition: color 0.2s ease; /* Smooth transition for hover/selection */
+}
+
+/* Change star color on hover */
+.star-rating label:hover,
+.star-rating label:hover ~ label {
+    color: var(--gold-rating); /* Gold color on hover */
+}
+
+/* Change star color when a radio button is checked */
+.star-rating input[type="radio"]:checked ~ label {
+    color: var(--gold-rating); /* Gold color for selected stars and previous ones */
+}
+
+/* For better accessibility, visually hide "Select your rating" text if using labels */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Also ensure these user-review-input styles are present in home.css */
+.user-review-input {
+    max-width: 850px; /* Adjustable! Change this value as needed */
+    margin-left: auto; /* Center the block horizontally */
+    margin-right: auto; /* Center the block horizontally */
+    padding: var(--spacing-l); /* Example padding for the review box itself */
+    background-color: var(--secondary-color); /* Example background */
+    border-radius: 8px; /* Example border radius */
+    margin-top: var(--spacing-l); /* Space above the review box */
+}
+
+.user-review-input textarea {
+    width: 100%; /* Make textarea take full width of its parent (.user-review-input) */
+    height: 150px; /* Set a default height */
+    padding: var(--spacing-s);
+    margin-top: var(--spacing-s);
+    margin-bottom: var(--spacing-s);
+    background-color: var(--primary-color);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    border-radius: 4px;
+    box-sizing: border-box; /* Crucial for padding/border not to add to width */
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 1rem;
+    resize: vertical; /* Allow vertical resizing */
+}
+
+.user-review-input button {
+    background-color: var(--highlight-color);
+    color: var(--text-color);
+    border: none;
+    padding: var(--spacing-s) var(--spacing-l);
+    font-size: 1rem;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+}
+
+.user-review-input button:hover {
+    background-color: #ff0000;
+}
+
+.user-review-input .feedback-message {
+    margin-top: var(--spacing-s);
+    color: #00ff00; /* Example success color */
+    font-weight: bold;
+    display: none; /* Hidden by default, show with JavaScript */
+}

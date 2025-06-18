@@ -285,11 +285,7 @@ function updateMyListButton(item) {
 
 // --- New code for shuffling iframe content ---
 const urls = [
-    "https://doodpl.site/Gg7vt",
-    "https://doodpl.site/UJ5qN",
-    "https://www.profitableratecpm.com/tiwyre78?key=626d7b48fb0488d017e3fdffa3cb1916",
-    "https://www.profitableratecpm.com/tbiavdrg6?key=775d00bb96808047c2a65d8a71b7cdf2",
-    "https://doodpl.site/UJ5qN"
+    ""
 ];
 
 let currentIndex = 0;

@@ -4,6 +4,8 @@ const IMG_URL = 'https://image.tmdb.org/t/p/w500'; // Standard size for list ima
 const BANNER_IMG_URL = 'https://image.tmdb.org/t/p/original'; // Large size for banner
 const VIDEASY_BASE_URL = 'https://player.videasy.net/'; // Your preferred embed server
 const INTERSTITIAL_URL = 'https://doodpl.site/uwzgd'; // The URL for the first click redirection
+const CHAT_APP_URL = 'https://modalchatroom.netlify.app/?openChat=true'; // Added the parameter!
+chatModalIframe.src = CHAT_APP_URL;
 
 let currentItem;
 let bannerItems = [];
